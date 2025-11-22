@@ -185,12 +185,105 @@ DAILY_DATA = [
     {"date_str": "2025-11-10", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-10", "member": "阿童", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-10", "member": "曾律师", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "马梓航", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-10", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-10", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
+
+# 1号（2025-11-01）：主持人小妮
+    {"date_str": "2025-11-01", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
+    {"date_str": "2025-11-01", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-01", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-01", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-01", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+
+    # 2号（2025-11-02）：主持人小妮
+    {"date_str": "2025-11-02", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
+    {"date_str": "2025-11-02", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "花满天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "李理", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-02", "member": "Betty", "is_participate": 1, "host": "", "review": ""},
+
+    # 3号（2025-11-03）：主持人光影
+    {"date_str": "2025-11-03", "member": "莫非", "is_participate": 1, "host": "光影", "review": ""},
+    {"date_str": "2025-11-03", "member": "光影", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-03", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-03", "member": "阿童", "is_participate": 1, "host": "", "review": ""},
+
+    # 4号（2025-11-04）：主持人小妮
+    {"date_str": "2025-11-04", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
+    {"date_str": "2025-11-04", "member": "Sora", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "马梓航", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
+
+    # 5号（2025-11-05）：主持人小妮
+    {"date_str": "2025-11-05", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
+    {"date_str": "2025-11-05", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
+
+    # 6号（2025-11-06）：主持人小妮
+    {"date_str": "2025-11-06", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
+    {"date_str": "2025-11-06", "member": "桃桃", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "二月", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
+
+    # 7号（2025-11-07）：主持人光影
+    {"date_str": "2025-11-07", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
+    {"date_str": "2025-11-07", "member": "小妍", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "桃桃", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "花满天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "李阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "李理", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "小金", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "二月", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
+
+    # 8号（2025-11-08）：主持人小妮
+    {"date_str": "2025-11-08", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
+    {"date_str": "2025-11-08", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "莜面鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
+
+    # 9号（2025-11-09）：主持人光影
+    {"date_str": "2025-11-09", "member": "Betty", "is_participate": 1, "host": "光影", "review": ""},
+    {"date_str": "2025-11-09", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "白了个白", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "拈指花开", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "自由之花", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "阿信", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "九月", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "光影", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "小马哥", "is_participate": 1, "host": "", "review": ""}
     # 新增日期数据示例（复制下面一行，修改日期、成员、主持人即可）
     # {"date_str": "2025-11-23", "member": "成员姓名", "is_participate": 1, "host": "", "review": ""},
     # 每个新日期只需在第一条记录填写主持人，其他成员留空
 ]
+
 
 # ---------------------- 基础配置 ----------------------
 # 设置中文字体
@@ -445,7 +538,6 @@ with st.sidebar:
         selected_month = st.date_input(
             "选择月份",
             value=today_sidebar,
-            format="YYYY-MM"
         ).replace(day=1)  # 取当月第一天
         # 计算当月最后一天
         if selected_month.month == 12:
@@ -453,7 +545,11 @@ with st.sidebar:
         else:
             next_month = selected_month.replace(month=selected_month.month + 1)
         start_date = selected_month
-        end_date = next_month - timedelta(days=1)
+        # 若选择的是当前月份，结束日期为今天；否则为当月最后一天
+        if selected_month.month == today_sidebar.month and selected_month.year == today_sidebar.year:
+            end_date = today_sidebar
+        else:
+            end_date = next_month - timedelta(days=1)
     # 显示当前筛选周期
     st.markdown(f"""
         <p style='color: #6B9093; margin: 1rem 0;'>
@@ -645,7 +741,7 @@ else:
 
     def color_rank(row):
         if row["排名"] == 1:
-            # 浅橙底色 + 深橙文字（去掉 !important）
+            # 浅橙底色 + 深橙文字
             return ["background-color: #FFF0E6; color: #D9534F; font-weight: 600;"] * len(row)
         elif row["排名"] == 2:
             # 浅绿底色 + 深绿文字
@@ -659,7 +755,7 @@ else:
         else:
             # 其他排名：白色底色 + 黑色文字
             return ["background-color: #FFFFFF; color: #333333;"] * len(row)
-        
+
     st.dataframe(
         member_participation[["排名", "成员姓名", "参与次数", "参与率(%)", "主持次数"]],  # 去掉.style.apply(...)
         use_container_width=True,
