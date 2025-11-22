@@ -2,5 +2,4 @@ streamlit>=1.38.0
 pandas>=2.2.0
 numpy>=1.26.0
 matplotlib>=3.8.0
-streamlit-aggrid>=0.3.4
-openpyxl>=3.1.0
+plotly>=5.17.0
