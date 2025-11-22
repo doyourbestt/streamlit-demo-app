@@ -1,3 +1,5 @@
-streamlit>=1.30.0  # Streamlit 版本（≥1.30 兼容免费版）
-pandas>=2.0.0       # 处理表格数据
-openpyxl>=3.1.0     # 读取 Excel 文件（必须加，否则上传 xlsx 会报错）
+streamlit>=1.38.0  # 支持表格条件格式化、打卡日历
+pandas>=2.2.0      # 数据处理
+numpy>=1.26.0      # 数值计算
+matplotlib>=3.8.0  # 成长曲线可视化
+streamlit-aggrid>=0.3.4  # 增强型表格（支持筛选、排序、高亮）
