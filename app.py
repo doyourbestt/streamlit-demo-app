@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+plt.switch_backend('Agg')
 from datetime import datetime, timedelta
 from st_aggrid import AgGrid, GridOptionsBuilder  # 增强型表格
 import os

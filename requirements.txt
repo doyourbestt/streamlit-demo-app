@@ -1,5 +1,6 @@
-streamlit>=1.38.0  # 支持表格条件格式化、打卡日历
-pandas>=2.2.0      # 数据处理
-numpy>=1.26.0      # 数值计算
-matplotlib>=3.8.0  # 成长曲线可视化
-streamlit-aggrid>=0.3.4  # 增强型表格（支持筛选、排序、高亮）
+streamlit>=1.38.0
+pandas>=2.2.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+streamlit-aggrid>=0.3.4
+openpyxl>=3.1.0
