@@ -7,6 +7,9 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 import warnings
 
+import warnings
+import streamlit as st
+
 # 强化IP质感：字体组合+全局样式统一
 st.markdown("""
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,10 +37,11 @@ st.markdown("""
             letter-spacing: 0.5px;
             text-shadow: 0 2px 4px rgba(46, 125, 50, 0.1);
         }
-        /* 英文/数字专属字体：Inter（现代简洁，提升科技感） */
+        /* 英文/数字专属字体：Inter（现代简洁，提升科技感）+ 深绿配色（清晰易读） */
         .en, .num, .score, .rank {
             font-family: 'Inter', sans-serif;
             font-weight: 700;
+            color: #1b5e20; /* 深绿色，呼应主题且对比度更高，解决看不清问题 */
         }
         /* 强调文本样式（标签、重点数据） */
         .highlight {
@@ -55,16 +59,21 @@ st.markdown("""
             font-size: 1.2rem;
             color: #2e7d32;
         }
+        /* 确保表格/输入框中的数字也能继承样式 */
+        table .num, input[type="number"] {
+            color: #1b5e20 !important;
+            font-weight: 700;
+        }
     </style>
 """, unsafe_allow_html=True)
 warnings.filterwarnings("ignore")
-
 # ---------------------- 核心配置（用户后续需填写的内容）----------------------
 # 1. 本月新成员名单（用户稍后填写，格式：["成员1", "成员2", ...]）
 THIS_MONTH_NEW_MEMBERS = ["李韫","豆皮","Libby","陈庚","阿龙","二月","七公主","匆匆","拈指花开","姜姜好","自由之花","白了个白","阿成","浅夏"]
 
 # 2. 复盘质量分（用户稍后填写，格式：{成员姓名: 最新质量分, ...}，10分制）
-REVIEW_QUALITY_SCORES = {}  # 示例：{"光影": 8.5, "小妮": 9.2, "小马哥": 7.8}
+#REVIEW_QUALITY_SCORES = {}  # 示例：{"光影": 8.5, "小妮": 9.2, "小马哥": 7.8}
+
 
 # 3. 被点赞数（用户稍后填写，格式：{成员姓名: 点赞数, ...}）
 LIKE_COUNTS = {}  # 示例：{"光影": 25, "小妮": 32, "小马哥": 18}
@@ -83,8 +92,7 @@ days_passed = max(0, (today - start_date).days)
 this_month_start = date(today.year, today.month, 1)
 this_month_end = date(today.year, today.month + 1, 1) - timedelta(days=1) if today.month < 12 else date(today.year + 1,
                                                                                                         1,
-                                                                                                        1) - timedelta(
-    days=1)
+                                                                                                        1) - timedelta(days=1)
 
 # ---------------------- 【每日数据录入区】（原有数据不变）----------------------
 DAILY_DATA = [
@@ -97,7 +105,7 @@ DAILY_DATA = [
     {"date_str": "2025-11-22", "member": "echo", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-22", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-22", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "州州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-22", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-22", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-22", "member": "李姐", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-22", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
@@ -271,7 +279,7 @@ DAILY_DATA = [
     {"date_str": "2025-11-04", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
     {"date_str": "2025-11-04", "member": "Sora", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-04", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "马梓航", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-04", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-04", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-04", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
@@ -433,10 +441,140 @@ def process_daily_data():
         "is_participate": "是否参与",
         "review": "微复盘"
     })[["日期", "成员姓名", "是否参与", "主持人", "微复盘"]]
+
+    # 新增：计算每个成员的参与次数并合并到原数据
+    participation_counts = df.groupby("成员姓名")["是否参与"].sum().reset_index()
+    participation_counts.rename(columns={"是否参与": "参与次数"}, inplace=True)
+    df = df.merge(participation_counts, on="成员姓名", how="left")
+
     return df
 
 # 直接处理数据，不读写CSV
 df = process_daily_data()
+
+all_members = list(set(df['成员姓名'].tolist() + THIS_MONTH_NEW_MEMBERS))
+REVIEW_QUALITY_SCORES = {member: 6 for member in all_members}
+# 初始化首次复盘信息中的质量分为6分
+for member in all_members:
+    if member not in FIRST_REVIEW_INFO:
+        # 假设首次日期为系统起始日期或成员首次出现日期
+        first_date = start_date.strftime("%Y-%m-%d")
+        FIRST_REVIEW_INFO[member] = {"首次日期": first_date, "首次质量分": 6}
+    else:
+        FIRST_REVIEW_INFO[member]["首次质量分"] = 6
+
+
+# 在现有代码的基础配置部分添加以下数据结构
+# ---------------------- 新增：评分与点赞数据存储 ----------------------
+# 存储格式: {日期: {成员: {评分: score, 点赞: [被点赞成员列表]}}}
+if 'review_data' not in st.session_state:
+    st.session_state.review_data = {}
+
+# 获取所有成员列表（从现有数据中提取）
+all_members = list(set(df['成员姓名'].tolist() + THIS_MONTH_NEW_MEMBERS))
+all_members.sort()
+
+# ---------------------- 第一步：定义用户专属密码（管理员提前分配）----------------------
+# 格式：{成员姓名: 专属密码}，建议密码统一为6位数字或自定义，由管理员分发给成员
+USER_PASSWORD = {
+    "张三": "123456",
+    "李四": "654321",
+    "王五": "888888",
+    # 请补充所有 all_members 中的成员及对应密码
+}
+
+def render_daily_review_interface():
+    st.markdown("### 📝 今日复盘互动")
+
+    # 获取当前日期字符串
+    today_str = datetime.now().date().strftime("%Y-%m-%d")
+
+    # 1. 选择当前用户（仅展示姓名，需后续验证）
+    current_user = st.selectbox("选择你的名字", all_members)
+
+    # 2. 身份验证：输入专属密码
+    password = st.text_input(
+        f"请输入 {current_user} 的专属密码",
+        type="password",  # 密码隐藏输入
+        placeholder="输入后点击验证"
+    )
+
+    # 验证按钮（单独验证，避免频繁校验）
+    is_authenticated = False
+    if st.button("验证身份"):
+        # 检查密码是否匹配（忽略大小写，可选）
+        if USER_PASSWORD.get(current_user) == password.strip():
+            is_authenticated = True
+            st.success(f"身份验证通过！欢迎 {current_user}～")
+        else:
+            st.error("密码错误！请输入正确的专属密码（联系管理员获取）")
+
+    # 未验证通过，不显示后续内容
+    if not is_authenticated:
+        return
+
+    # 3. 检查是否已提交（验证通过后再校验提交状态）
+    has_submitted = False
+    if today_str in st.session_state.review_data:
+        if current_user in st.session_state.review_data[today_str]:
+            has_submitted = True
+
+    if has_submitted:
+        st.info("你今天已经提交过复盘评分和点赞啦！明天再来吧～")
+        # 显示已提交的信息
+        submitted_data = st.session_state.review_data[today_str][current_user]
+        st.write(f"你的自评分数：{submitted_data['评分']}分")
+        st.write(f"你点赞的成员：{', '.join(submitted_data['点赞'])}")
+        return
+
+    # 4. 自评质量分选择（6-10分）
+    score = st.radio(
+        "请为你的今日复盘质量评分",
+        options=[6, 7, 8, 9, 10],
+        format_func=lambda x: f"{x}分"
+    )
+
+    # 5. 给其他用户点赞（可多选，限制1-3位）
+    liked_members = st.multiselect(
+        "请选择你想点赞的成员（可多选，最少1位，最多3位）",
+        options=[m for m in all_members if m != current_user],  # 不能给自己点赞
+        max_selections=3
+    )
+
+    # 6. 提交按钮（含点赞数量校验）
+    if st.button("提交", type="primary"):
+        if len(liked_members) == 0:
+            st.error("请至少选择1位成员进行点赞！")
+        else:
+            # 初始化数据结构
+            if today_str not in st.session_state.review_data:
+                st.session_state.review_data[today_str] = {}
+
+            # 保存数据（绑定验证通过的用户）
+            st.session_state.review_data[today_str][current_user] = {
+                "评分": score,
+                "点赞": liked_members
+            }
+
+            st.success("提交成功！感谢你的参与～")
+
+            # 数据持久化
+            import json
+            with open("review_data.json", "w", encoding="utf-8") as f:
+                json.dump(st.session_state.review_data, f, ensure_ascii=False, indent=2)
+
+# ---------------------- 主页面：顶部天数显示（原有不变）----------------------
+st.markdown(f"""
+    <div class='day-count-title'>
+        复盘实验室第
+        <span class='day-count-number'>{days_passed}</span>
+        天
+    </div>
+""", unsafe_allow_html=True)
+
+# ---------------------- 主页面：头部信息（原有不变）----------------------
+st.markdown("<h1 class='warm-title'>✨ 公益复盘群 · 成长记录</h1>", unsafe_allow_html=True)
+st.markdown("<p style='color: #6B9093; margin-bottom: 2rem;'>（可在左上方选择时间范围）记录参与情况，留存成长足迹～</p>", unsafe_allow_html=True)
 
 # ---------------------- 侧边栏（原有不变）----------------------
 with st.sidebar:
@@ -484,134 +622,6 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<p style='color: #6B9093; font-size: 0.9rem;'>🌱 公益复盘群成长记录平台</p>", unsafe_allow_html=True)
 
-# ---------------------- 新增：核心分数计算函数 ----------------------
-def calculate_member_metrics():
-    """计算每个成员的核心指标（参与次数、质量分、点赞数、进步分等）"""
-    # 新增：根据侧边栏选择的周期筛选数据
-    today = datetime.now().date()
-    if period_type == "本周":
-        # 本周：周一至今天
-        week_start = today - timedelta(days=today.weekday())
-        filtered_df = df[(df["日期"] >= week_start) & (df["日期"] <= today)]
-    elif period_type == "上周":
-        # 上周：上周一至上周日
-        last_week_end = today - timedelta(days=today.weekday() + 1)
-        last_week_start = last_week_end - timedelta(days=6)
-        filtered_df = df[(df["日期"] >= last_week_start) & (df["日期"] <= last_week_end)]
-    elif period_type == "月度":
-        # 本月：月初至今天
-        month_start = date(today.year, today.month, 1)
-        filtered_df = df[(df["日期"] >= month_start) & (df["日期"] <= today)]
-
-        # 1. 参与次数统计（使用筛选后的数据）
-    member_participation = filtered_df[filtered_df["是否参与"] == 1]["成员姓名"].value_counts().reset_index()
-    member_participation.columns = ["成员姓名", "参与次数"]
-
-    # 2. 补充质量分、点赞数（无数据时默认0）
-    member_participation["复盘质量分"] = member_participation["成员姓名"].map(REVIEW_QUALITY_SCORES).fillna(0)
-    member_participation["被点赞数"] = member_participation["成员姓名"].map(LIKE_COUNTS).fillna(0)
-
-    # 3. 计算首月进步分（逻辑不变，但基于筛选后参与的成员）
-    def get_first_month_progress(member):
-        if member not in FIRST_REVIEW_INFO:
-            return 0
-        first_info = FIRST_REVIEW_INFO[member]
-        first_score = first_info.get("首次质量分", 0)
-        current_score = member_participation[member_participation["成员姓名"] == member]["复盘质量分"].iloc[0]
-        return max(0, current_score - first_score)  # 进步分不低于0
-
-    member_participation["首月进步分"] = member_participation["成员姓名"].apply(get_first_month_progress)
-
-    # 4. 每周质量分/进步分（基于当前筛选周期内的逻辑，此处保持原逻辑，如需关联筛选周期可进一步调整）
-    def get_week_quality_score(member, week_type):
-        today = datetime.now().date()
-        if week_type == "this_week":
-            monday = today - timedelta(days=today.weekday())
-            week_start = monday
-            week_end = today
-        else:  # last_week
-            last_monday = today - timedelta(days=today.weekday() + 7)
-            week_start = last_monday
-            week_end = last_monday + timedelta(days=6)
-
-        # 注意：此处仍用原df，如需限定在筛选周期内可改为 filtered_df
-        member_records = df[
-            (df["成员姓名"] == member) &
-            (df["是否参与"] == 1) &
-            (df["日期"] >= week_start) &
-            (df["日期"] <= week_end)
-            ]
-        if len(member_records) == 0:
-            return 0
-        return REVIEW_QUALITY_SCORES.get(member, 0)
-
-    member_participation["本周质量分"] = member_participation["成员姓名"].apply(
-        lambda x: get_week_quality_score(x, "this_week"))
-    member_participation["上周质量分"] = member_participation["成员姓名"].apply(
-        lambda x: get_week_quality_score(x, "last_week"))
-    member_participation["每周进步分"] = member_participation["本周质量分"] - member_participation["上周质量分"]
-
-    # 5. 标记是否为本月新成员
-    member_participation["是否本月新成员"] = member_participation["成员姓名"].isin(THIS_MONTH_NEW_MEMBERS)
-
-    return member_participation
-
-
-# ---------------------- 新增：三种榜单计算函数 ----------------------
-def get_comprehensive_ranking(metrics_df):
-    """综合实力榜：参与次数×40% + 复盘质量分×50% + 被点赞数×10%"""
-    df = metrics_df.copy()
-    # 计算综合分（标准化得分，避免数值范围差异影响）
-    max_participate = df["参与次数"].max() if df["参与次数"].max() > 0 else 1
-    max_quality = df["复盘质量分"].max() if df["复盘质量分"].max() > 0 else 1
-    max_like = df["被点赞数"].max() if df["被点赞数"].max() > 0 else 1
-
-    df["参与次数标准化"] = df["参与次数"] / max_participate * 10
-    df["质量分标准化"] = df["复盘质量分"] / max_quality * 10
-    df["点赞数标准化"] = df["被点赞数"] / max_like * 10
-
-    df["综合实力分"] = (
-            df["参与次数标准化"] * 0.4 +
-            df["质量分标准化"] * 0.5 +
-            df["点赞数标准化"] * 0.1
-    ).round(2)
-
-    return df.sort_values("综合实力分", ascending=False).reset_index(drop=True)
-
-
-def get_newbie_ranking(metrics_df):
-    """新锐成长榜：参与次数≤5的用户，参与次数×30% + 首月进步分×70%"""
-    df = metrics_df.copy()
-    # 筛选参与次数≤5的用户
-    newbie_df = df[df["参与次数"] <= 5].copy()
-    if len(newbie_df) == 0:
-        return pd.DataFrame(columns=df.columns.tolist() + ["新锐成长分"])
-
-    # 计算成长分（标准化）
-    max_participate = newbie_df["参与次数"].max() if newbie_df["参与次数"].max() > 0 else 1
-    max_progress = newbie_df["首月进步分"].max() if newbie_df["首月进步分"].max() > 0 else 1
-
-    newbie_df["参与次数标准化"] = newbie_df["参与次数"] / max_participate * 10
-    newbie_df["进步分标准化"] = newbie_df["首月进步分"] / max_progress * 10
-
-    newbie_df["新锐成长分"] = (
-            newbie_df["参与次数标准化"] * 0.3 +
-            newbie_df["进步分标准化"] * 0.7
-    ).round(2)
-
-    return newbie_df.sort_values("新锐成长分", ascending=False).reset_index(drop=True)
-
-
-def get_weekly_progress_ranking(metrics_df):
-    """每周进步榜：所有用户，本周质量分-上周质量分，正增长Top10"""
-    df = metrics_df.copy()
-    # 筛选正增长用户
-    progress_df = df[df["每周进步分"] > 0].copy()
-    if len(progress_df) == 0:
-        return pd.DataFrame(columns=df.columns.tolist())
-
-    # 按进步分降序，取Top10
-    return progress_df.sort_values("每周进步分", ascending=False).head(10).reset_index(drop=True)
 
 # ---------------------- 新增：本月黑马计算函数 ----------------------
 def get_this_month_dark_horse(metrics_df):
@@ -681,6 +691,225 @@ def get_this_month_dark_horse(metrics_df):
     result_html = f'<div style="text-align:center;width:100%;margin:1rem 0;overflow-x:auto;padding:0.5rem 0;">{"".join(cards_html)}</div>'
 
     return result_html
+
+# ---------------------- 新增：核心分数计算函数 ----------------------
+def calculate_member_metrics():
+    """计算每个成员的核心指标（参与次数、质量分、点赞数、进步分等）"""
+    # 新增：根据侧边栏选择的周期筛选数据
+    today = datetime.now().date()
+    if period_type == "本周":
+        # 本周：周一至今天
+        week_start = today - timedelta(days=today.weekday())
+        filtered_df = df[(df["日期"] >= week_start) & (df["日期"] <= today)]
+    elif period_type == "上周":
+        # 上周：上周一至上周日
+        last_week_end = today - timedelta(days=today.weekday() + 1)
+        last_week_start = last_week_end - timedelta(days=6)
+        filtered_df = df[(df["日期"] >= last_week_start) & (df["日期"] <= last_week_end)]
+    elif period_type == "月度":
+        # 本月：月初至今天
+        month_start = date(today.year, today.month, 1)
+        filtered_df = df[(df["日期"] >= month_start) & (df["日期"] <= today)]
+
+        # 1. 参与次数统计（使用筛选后的数据）
+    member_participation = filtered_df[filtered_df["是否参与"] == 1]["成员姓名"].value_counts().reset_index()
+    member_participation.columns = ["成员姓名", "参与次数"]
+
+    # 2. 补充质量分、点赞数（无数据时默认0）
+    member_participation["复盘质量分"] = member_participation["成员姓名"].map(REVIEW_QUALITY_SCORES).fillna(0)
+    member_participation["被点赞数"] = member_participation["成员姓名"].map(LIKE_COUNTS).fillna(0)
+
+    # 3. 计算首月进步分（逻辑不变，但基于筛选后参与的成员）
+    def get_first_month_progress(member):
+        if member not in FIRST_REVIEW_INFO:
+            return 0
+        first_info = FIRST_REVIEW_INFO[member]
+        first_score = first_info.get("首次质量分", 0)
+        current_score = member_participation[member_participation["成员姓名"] == member]["复盘质量分"].iloc[0]
+        return max(0, current_score - first_score)  # 进步分不低于0
+
+    # 新增：从原始df中提取每个成员最新的参与记录（日期和是否参与）
+    def get_latest_participation(df):
+        # 按成员分组，取每个成员最新的记录（按日期排序）
+        df_sorted = df.sort_values(by=["成员姓名", "日期"], ascending=[True, False])
+        # 每个成员只保留最新一条记录
+        latest_records = df_sorted.drop_duplicates(subset=["成员姓名"], keep="first")
+        # 提取需要的字段
+        return latest_records[["成员姓名", "是否参与", "日期"]]
+
+    # 获取每个成员最新的参与信息
+    latest_participation = get_latest_participation(df)
+
+    # 合并到member_participation中
+    member_participation = member_participation.merge(
+        latest_participation,
+        on="成员姓名",
+        how="left"  # 左连接确保所有成员都保留
+    )
+
+    member_participation["首月进步分"] = member_participation["成员姓名"].apply(get_first_month_progress)
+
+    # 4. 每周质量分/进步分（基于当前筛选周期内的逻辑，此处保持原逻辑，如需关联筛选周期可进一步调整）
+    def get_week_quality_score(member, week_type):
+        today = datetime.now().date()
+        if week_type == "this_week":
+            monday = today - timedelta(days=today.weekday())
+            week_start = monday
+            week_end = today
+        else:  # last_week
+            last_monday = today - timedelta(days=today.weekday() + 7)
+            week_start = last_monday
+            week_end = last_monday + timedelta(days=6)
+
+        # 注意：此处仍用原df，如需限定在筛选周期内可改为 filtered_df
+        member_records = df[
+            (df["成员姓名"] == member) &
+            (df["是否参与"] == 1) &
+            (df["日期"] >= week_start) &
+            (df["日期"] <= week_end)
+            ]
+        if len(member_records) == 0:
+            return 0
+        return REVIEW_QUALITY_SCORES.get(member, 0)
+
+    member_participation["本周质量分"] = member_participation["成员姓名"].apply(
+        lambda x: get_week_quality_score(x, "this_week"))
+    member_participation["上周质量分"] = member_participation["成员姓名"].apply(
+        lambda x: get_week_quality_score(x, "last_week"))
+    member_participation["每周进步分"] = member_participation["本周质量分"] - member_participation["上周质量分"]
+
+    # 5. 标记是否为本月新成员
+    member_participation["是否本月新成员"] = member_participation["成员姓名"].isin(THIS_MONTH_NEW_MEMBERS)
+
+    return member_participation
+
+# ---------------------- 新增：本月黑马称号展示 ----------------------
+metrics_df = calculate_member_metrics()
+
+st.subheader("🏆 本期黑马（新成员前6名）")
+dark_horse = get_this_month_dark_horse(metrics_df)
+st.markdown(dark_horse, unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>基于本月新成员的参与次数、复盘质量分综合评选</p>", unsafe_allow_html=True)
+
+# ---------------------- 在主界面添加新功能入口 ----------------------
+# 在现有代码的主界面部分（如侧边栏下方或主内容区）添加
+st.markdown("## 🌟 今日互动区")
+render_daily_review_interface()
+
+# ---------------------- 新增：三种榜单计算函数 ----------------------
+def get_comprehensive_ranking(metrics_df):
+    """综合实力榜：参与次数×40% + 复盘质量分×50% + 被点赞数×10%"""
+    df = metrics_df.copy()
+    # 计算综合分（标准化得分，避免数值范围差异影响）
+    max_participate = df["参与次数"].max() if df["参与次数"].max() > 0 else 1
+    max_quality = df["复盘质量分"].max() if df["复盘质量分"].max() > 0 else 1
+    max_like = df["被点赞数"].max() if df["被点赞数"].max() > 0 else 1
+
+    df["参与次数标准化"] = df["参与次数"] / max_participate * 10
+    df["质量分标准化"] = df["复盘质量分"] / max_quality * 10
+    df["点赞数标准化"] = df["被点赞数"] / max_like * 10
+
+    df["综合实力分"] = (
+            df["参与次数标准化"] * 0.4 +
+            df["质量分标准化"] * 0.5 +
+            df["点赞数标准化"] * 0.1
+    ).round(2)
+
+    return df.sort_values("综合实力分", ascending=False).reset_index(drop=True)
+
+def get_newbie_ranking(metrics_df):
+    """新锐成长榜：参与次数≤5的用户，参与次数×30% + 本周较上周增长次数×70%"""
+    # 深拷贝避免修改原数据
+    df = metrics_df.copy()
+
+    # ---------------------- 增强字段检查与兼容 ----------------------
+    # 检查必要字段，给出明确报错提示
+    required_cols = ["成员姓名", "参与次数", "是否参与", "日期"]
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        raise ValueError(
+            f"metrics_df缺少必要字段：{', '.join(missing_cols)}。请确保传入包含这些字段的DataFrame（原始df直接传入即可）")
+
+    # 自动转换日期格式（兼容date/str类型）
+    if df["日期"].dtype != "object" or not isinstance(df["日期"].iloc[0], date):
+        try:
+            df["日期"] = pd.to_datetime(df["日期"]).dt.date
+        except Exception as e:
+            raise ValueError(f"日期字段格式错误，无法转换为date类型：{str(e)}")
+
+    # ---------------------- 原逻辑保留：筛选参与次数≤5的用户 ----------------------
+    newbie_df = df[df["参与次数"] <= 5].copy()
+    if len(newbie_df) == 0:
+        return pd.DataFrame(
+            columns=df.columns.tolist() + ["本周参与次数", "上周参与次数", "本周较上周增长次数", "参与次数标准化",
+                                           "增长次数标准化", "新锐成长分"])
+
+    # ---------------------- 计算本周/上周参与次数及增长次数 ----------------------
+    today = datetime.now().date()
+    today_weekday = today.weekday()  # 0=周一，6=周日
+    this_week_start = today - timedelta(days=today_weekday)  # 本周一
+    last_week_start = this_week_start - timedelta(days=7)  # 上周一
+    last_week_end = this_week_start - timedelta(days=1)  # 上周日
+
+    # 统计每个新锐用户的时段参与次数
+    user_time_stats = []
+    for user in newbie_df["成员姓名"].unique():
+        # 该用户所有参与记录（是否参与=1）
+        user_participate_df = df[(df["成员姓名"] == user) & (df["是否参与"] == 1)]
+
+        # 本周参与次数（本周一至今日）
+        this_week_participate = user_participate_df[
+            (user_participate_df["日期"] >= this_week_start) &
+            (user_participate_df["日期"] <= today)
+            ].shape[0]
+
+        # 上周参与次数（上周一至上周日）
+        last_week_participate = user_participate_df[
+            (user_participate_df["日期"] >= last_week_start) &
+            (user_participate_df["日期"] <= last_week_end)
+            ].shape[0]
+
+        # 增长次数（最小为0，避免负增长）
+        growth = max(0, this_week_participate - last_week_participate)
+
+        user_time_stats.append({
+            "成员姓名": user,
+            "本周参与次数": this_week_participate,
+            "上周参与次数": last_week_participate,
+            "本周较上周增长次数": growth
+        })
+
+    # 合并统计结果
+    time_stats_df = pd.DataFrame(user_time_stats)
+    newbie_df = newbie_df.merge(time_stats_df, on="成员姓名", how="left")
+
+    # ---------------------- 标准化计算（保持原逻辑） ----------------------
+    max_participate = newbie_df["参与次数"].max() if newbie_df["参与次数"].max() > 0 else 1
+    max_growth = newbie_df["本周较上周增长次数"].max() if newbie_df["本周较上周增长次数"].max() > 0 else 1
+
+    newbie_df["参与次数标准化"] = (newbie_df["参与次数"] / max_participate * 10).round(2)
+    newbie_df["增长次数标准化"] = (newbie_df["本周较上周增长次数"] / max_growth * 10).round(2)
+
+    # ---------------------- 计算新锐成长分 ----------------------
+    newbie_df["新锐成长分"] = (
+            newbie_df["参与次数标准化"] * 0.3 +
+            newbie_df["增长次数标准化"] * 0.7
+    ).round(2)
+
+    # 按成长分降序排序
+    return newbie_df.sort_values("新锐成长分", ascending=False).reset_index(drop=True)
+
+def get_weekly_progress_ranking(metrics_df):
+    """每周进步榜：所有用户，本周质量分-上周质量分，正增长Top10"""
+    df = metrics_df.copy()
+    # 筛选正增长用户
+    progress_df = df[df["每周进步分"] > 0].copy()
+    if len(progress_df) == 0:
+        return pd.DataFrame(columns=df.columns.tolist())
+
+    # 按进步分降序，取Top10
+    return progress_df.sort_values("每周进步分", ascending=False).head(10).reset_index(drop=True)
+
 
 # ---------------------- 页面样式定制（原有样式不变，新增榜单样式）----------------------
 def set_warm_style():
@@ -844,27 +1073,6 @@ def set_warm_style():
 
 set_warm_style()
 
-# ---------------------- 主页面：顶部天数显示（原有不变）----------------------
-st.markdown(f"""
-    <div class='day-count-title'>
-        复盘实验室第
-        <span class='day-count-number'>{days_passed}</span>
-        天
-    </div>
-""", unsafe_allow_html=True)
-
-# ---------------------- 新增：本月黑马称号展示 ----------------------
-metrics_df = calculate_member_metrics()
-
-st.subheader("🏆 本月黑马（新成员前6名）")
-dark_horse = get_this_month_dark_horse(metrics_df)
-st.markdown(dark_horse, unsafe_allow_html=True)
-st.caption("基于新成员的参与次数、复盘质量分综合评选")
-
-# ---------------------- 主页面：头部信息（原有不变）----------------------
-st.markdown("<h1 class='warm-title'>✨ 公益复盘群 · 成长记录</h1>", unsafe_allow_html=True)
-st.markdown("<p style='color: #6B9093; margin-bottom: 2rem;'>记录参与情况，留存成长足迹～</p>", unsafe_allow_html=True)
-
 
 # ---------------------- 数据预处理（按筛选周期过滤） ----------------------
 # 按筛选周期过滤数据
@@ -927,7 +1135,7 @@ with tab1:
             <div class='rank-header'>
                 <span class='rank-icon'>🏆</span>
                 <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>综合实力榜</h3>
-                <span class='rank-desc'>面向头部/活跃用户 | 参与次数×40% + 质量分×50% + 点赞数×10%</span>
+                <span class='rank-desc'>面向活跃用户 | 参与次数×40% + 质量分×50% + 点赞数×10%</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -961,7 +1169,7 @@ with tab2:
             <div class='rank-header'>
                 <span class='rank-icon'>🌱</span>
                 <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>新锐成长榜</h3>
-                <span class='rank-desc'>面向参与≤5次新人 | 参与次数×30% + 首月进步分×70%</span>
+                <span class='rank-desc'>面向参与次数≤5的成员 | 参与次数×30% + 本周较上周增长次数×70%</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -970,8 +1178,8 @@ with tab2:
         st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>暂无符合条件的新人用户～</p>",
                     unsafe_allow_html=True)
     else:
-        display_cols = ["排名", "成员姓名", "参与次数", "首月进步分", "新锐成长分"]
-        rank_df = newbie_rank[["成员姓名", "参与次数", "首月进步分", "新锐成长分"]].copy()
+        display_cols = ["排名", "成员姓名", "参与次数", "新锐成长分"]
+        rank_df = newbie_rank[["成员姓名", "参与次数", "新锐成长分"]].copy()
         rank_df["排名"] = range(1, len(rank_df) + 1)
         rank_df = rank_df[display_cols]
 
@@ -982,7 +1190,6 @@ with tab2:
             column_config={
                 "排名": st.column_config.NumberColumn("排名", format="%d"),
                 "参与次数": st.column_config.NumberColumn("参与次数", format="%d"),
-                "首月进步分": st.column_config.NumberColumn("首月进步分", format="%.1f"),
                 "新锐成长分": st.column_config.NumberColumn("新锐成长分", format="%.2f")
             }
         )
