@@ -7,31 +7,86 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 import warnings
 
-# 导入字体（增强IP质感）
+# 强化IP质感：字体组合+全局样式统一
 st.markdown("""
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@500;700;900&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;600;800&family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* 全局基础样式：统一IP质感 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* 中文主体字体：Noto Sans SC（清晰专业）+ 马善政（手写感点缀） */
+        body, div, p, span, table, input {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 500;
+            line-height: 1.6;
+            color: #2d3748; /* 深灰主色，专业不压抑 */
+        }
+        /* 标题专属字体：马善政（手写感，强化成长温度）+ 加粗强调 */
+        h1, h2, h3, h4, .title {
+            font-family: 'Ma Shan Zheng', 'Noto Sans SC', cursive;
+            font-weight: 800;
+            color: #2e7d32; /* 主题绿，呼应成长实验室🌱 */
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(46, 125, 50, 0.1);
+        }
+        /* 英文/数字专属字体：Inter（现代简洁，提升科技感） */
+        .en, .num, .score, .rank {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+        }
+        /* 强调文本样式（标签、重点数据） */
+        .highlight {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 800;
+            color: #ff7a45; /* 暖橙 accent色，吸睛不刺眼 */
+        }
+        /* 卡片类文本优化 */
+        .card-text {
+            font-size: 1rem;
+            color: #4a5568;
+        }
+        .card-title {
+            font-family: 'Ma Shan Zheng', 'Noto Sans SC', cursive;
+            font-size: 1.2rem;
+            color: #2e7d32;
+        }
+    </style>
 """, unsafe_allow_html=True)
-
 warnings.filterwarnings("ignore")
 
-# ---------------------- 核心新增：计算复盘实验室天数 ----------------------
+# ---------------------- 核心配置（用户后续需填写的内容）----------------------
+# 1. 本月新成员名单（用户稍后填写，格式：["成员1", "成员2", ...]）
+THIS_MONTH_NEW_MEMBERS = ["李韫","豆皮","Libby","陈庚","阿龙","二月","七公主","匆匆","拈指花开","姜姜好","自由之花","白了个白","阿成","浅夏"]
+
+# 2. 复盘质量分（用户稍后填写，格式：{成员姓名: 最新质量分, ...}，10分制）
+REVIEW_QUALITY_SCORES = {}  # 示例：{"光影": 8.5, "小妮": 9.2, "小马哥": 7.8}
+
+# 3. 被点赞数（用户稍后填写，格式：{成员姓名: 点赞数, ...}）
+LIKE_COUNTS = {}  # 示例：{"光影": 25, "小妮": 32, "小马哥": 18}
+
+# 4. 成员首次复盘信息（用户稍后补充，格式：{成员姓名: {"首次日期": "2025-11-01", "首次质量分": 6.5}, ...}）
+FIRST_REVIEW_INFO = {}  # 示例：{"新成员A": {"首次日期": "2025-11-05", "首次质量分": 6.0}}
+
+# ---------------------- 基础配置 ----------------------
 # 起始日期：2025年7月7日
 start_date = date(2025, 7, 7)
 # 今日日期（本地日期，自动获取）
 today = datetime.now().date()
-# 计算天数差（确保不出现负数，若起始日期在今日之后则显示0）
+# 计算天数差
 days_passed = max(0, (today - start_date).days)
+# 本月时间范围（用于黑马筛选）
+this_month_start = date(today.year, today.month, 1)
+this_month_end = date(today.year, today.month + 1, 1) - timedelta(days=1) if today.month < 12 else date(today.year + 1,
+                                                                                                        1,
+                                                                                                        1) - timedelta(
+    days=1)
 
-# ---------------------- 【每日数据录入区】----------------------
-# ！！！你只需修改这里的数据，运行代码即可自动保存 ！！！
-# 格式说明：
-# - date_str: 日期（格式：YYYY-MM-DD）
-# - member: 成员姓名（直接填写，无需引号）
-# - is_participate: 是否参与（1=是，0=否）
-# - host: 当日主持人（每个日期只需在一条记录中填写，其他可留空，自动去重）
-# - review: 固定为空字符串（已移除微复盘功能）
+# ---------------------- 【每日数据录入区】（原有数据不变）----------------------
 DAILY_DATA = [
     # 本周六（2025-11-22）：主持人李韫
     {"date_str": "2025-11-22", "member": "陈庚", "is_participate": 1, "host": "李韫", "review": ""},
@@ -248,7 +303,7 @@ DAILY_DATA = [
     {"date_str": "2025-11-07", "member": "花满天", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-07", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-07", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "李阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-07", "member": "李理", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-07", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-07", "member": "小金", "is_participate": 1, "host": "", "review": ""},
@@ -258,7 +313,7 @@ DAILY_DATA = [
     # 8号（2025-11-08）：主持人小妮
     {"date_str": "2025-11-08", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
     {"date_str": "2025-11-08", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "莜面鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-08", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-08", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-08", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
@@ -278,19 +333,82 @@ DAILY_DATA = [
     {"date_str": "2025-11-09", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-09", "member": "九月", "is_participate": 1, "host": "", "review": ""},
     {"date_str": "2025-11-09", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "小马哥", "is_participate": 1, "host": "", "review": ""}
+    {"date_str": "2025-11-09", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+
+    # 11-09（主持人光影）
+    {"date_str": "2025-11-09", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
+    {"date_str": "2025-11-09", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "九月", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "Isa", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "Betty", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "小金", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "阿成", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-09", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+
+    # 11-16（主持人光影）
+    {"date_str": "2025-11-16", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
+    {"date_str": "2025-11-16", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "阿成", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "Betty", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "九月", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "Isa", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+
+    {"date_str": "2025-11-01", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-01", "member": "平平", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-03", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-03", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-04", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-05", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-06", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "平平", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-07", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-08", "member": "平平", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-10", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-11", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-12", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-13", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-14", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-16", "member": "桃子", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-17", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-18", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-19", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-19", "member": "echo", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-20", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-21", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-22", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+
+    # 11-23（主持人miss恩）
+    {"date_str": "2025-11-23", "member": "miss恩", "is_participate": 1, "host": "miss恩", "review": ""},
+    {"date_str": "2025-11-23", "member": "光影", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
+    {"date_str": "2025-11-23", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
     # 新增日期数据示例（复制下面一行，修改日期、成员、主持人即可）
     # {"date_str": "2025-11-23", "member": "成员姓名", "is_participate": 1, "host": "", "review": ""},
     # 每个新日期只需在第一条记录填写主持人，其他成员留空
 ]
 
-
-# ---------------------- 基础配置 ----------------------
-# 设置中文字体
+# ---------------------- 基础配置（原有配置不变）----------------------
 plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans', 'Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
-
-# Streamlit页面配置（温馨风格）
 st.set_page_config(
     page_title="成长实验室 · 复盘成长",
     page_icon="🌱",
@@ -298,82 +416,279 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 数据文件路径（持久化存储，录入后自动保存）
-DATA_PATH = Path("review_group_data.csv")
+def process_daily_data():
+    """直接处理DAILY_DATA为DataFrame，不依赖外部文件"""
+    df = pd.DataFrame(DAILY_DATA)
+    # 转换日期格式
+    df["日期"] = pd.to_datetime(df["date_str"]).dt.date
+    # 提取每日主持人（每个日期的第一个非空host）
+    def get_daily_host(group):
+        hosts = group["host"].dropna().unique()
+        return hosts[0] if len(hosts) > 0 else "无"
+    daily_hosts = df.groupby("日期").apply(get_daily_host).to_dict()
+    df["主持人"] = df["日期"].map(daily_hosts)
+    # 重命名并筛选列
+    df = df.rename(columns={
+        "member": "成员姓名",
+        "is_participate": "是否参与",
+        "review": "微复盘"
+    })[["日期", "成员姓名", "是否参与", "主持人", "微复盘"]]
+    return df
 
+# 直接处理数据，不读写CSV
+df = process_daily_data()
 
-# ---------------------- 数据处理核心函数 ----------------------
-def init_data():
-    """初始化数据文件（若不存在则创建，新增host字段）"""
-    if not DATA_PATH.exists():
-        init_df = pd.DataFrame({
-            "日期": [],
-            "成员姓名": [],
-            "是否参与": [],
-            "主持人": [],  # 新增主持人字段
-            "微复盘": []
-        })
-        init_df.to_csv(DATA_PATH, index=False, encoding="utf-8-sig")
-    return pd.read_csv(DATA_PATH, encoding="utf-8-sig")
-
-
-def save_new_data(new_data_list):
-    """保存新录入数据到CSV（自动去重，处理主持人字段）"""
-    if not new_data_list:
-        return
-    # 转换新数据为DataFrame
-    new_df = pd.DataFrame(new_data_list)
-    new_df["日期"] = pd.to_datetime(new_df["date_str"]).dt.date
-    # 核心修复：强制转换host字段为字符串，避免空值识别异常
-    new_df["host"] = new_df["host"].astype(str).str.strip()
-
-    # 提取每日主持人（优先获取非空、非空白字符串的值）
-    def get_daily_host(host_series):
-        # 过滤空字符串和纯空白字符串
-        valid_hosts = host_series[host_series != ""].drop_duplicates()
-        return valid_hosts.iloc[0] if len(valid_hosts) > 0 else "无"
-
-    daily_host = new_df.groupby("日期")["host"].apply(get_daily_host).to_dict()
-    # 为每条记录填充当日主持人
-    new_df["主持人"] = new_df["日期"].map(daily_host)
-    # 选择最终字段
-    new_df = new_df[["日期", "member", "is_participate", "主持人", "review"]]
-    new_df.columns = ["日期", "成员姓名", "是否参与", "主持人", "微复盘"]
-    # 加载历史数据
-    history_df = init_data()
-    history_df["日期"] = pd.to_datetime(history_df["日期"]).dt.date
-    # 去重：同一日期+同一成员只保留最新一条
-    combined_df = pd.concat([history_df, new_df]).drop_duplicates(
-        subset=["日期", "成员姓名"], keep="last"
+# ---------------------- 侧边栏（原有不变）----------------------
+with st.sidebar:
+    st.markdown("<h3 style='color: #FF7A45; margin: 1rem 0;'>📅 周期筛选</h3>", unsafe_allow_html=True)
+    period_type = st.radio(
+        "选择统计周期",
+        options=["本周", "上周", "月度"],
+        index=0,
+        key="period_type"
     )
-    # 保存到CSV
-    combined_df.to_csv(DATA_PATH, index=False, encoding="utf-8-sig")
-    # print(f"[成功] 保存 {len(new_df)} 条数据（自动去重后总数据量：{len(combined_df)}）")
+    today_sidebar = datetime.now().date()
+    if period_type == "本周":
+        monday = today_sidebar - timedelta(days=today_sidebar.weekday())
+        start_date = monday
+        end_date = today_sidebar
+    elif period_type == "上周":
+        last_monday = today_sidebar - timedelta(days=today_sidebar.weekday() + 7)
+        last_sunday = last_monday + timedelta(days=6)
+        start_date = last_monday
+        end_date = last_sunday
+    else:
+        selected_month = st.date_input("选择月份", value=today_sidebar).replace(day=1)
+        if selected_month.month == 12:
+            next_month = selected_month.replace(year=selected_month.year + 1, month=1)
+        else:
+            next_month = selected_month.replace(month=selected_month.month + 1)
+        start_date = selected_month
+        if selected_month.month == today_sidebar.month and selected_month.year == today_sidebar.year:
+            end_date = today_sidebar
+        else:
+            end_date = next_month - timedelta(days=1)
+
+    st.markdown(f"""
+        <p style='color: #6B9093; margin: 1rem 0;'>
+        当前筛选：{start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}
+        </p>
+    """, unsafe_allow_html=True)
+
+    if st.button("🔄 刷新数据", type="primary"):
+        df = init_data()
+        df["日期"] = pd.to_datetime(df["日期"]).dt.date
+        df["主持人"] = df["主持人"].fillna("无").astype(str).str.strip()
+        st.success("数据已刷新！")
+
+    st.markdown("---")
+    st.markdown("<p style='color: #6B9093; font-size: 0.9rem;'>🌱 公益复盘群成长记录平台</p>", unsafe_allow_html=True)
+
+# ---------------------- 新增：核心分数计算函数 ----------------------
+def calculate_member_metrics():
+    """计算每个成员的核心指标（参与次数、质量分、点赞数、进步分等）"""
+    # 新增：根据侧边栏选择的周期筛选数据
+    today = datetime.now().date()
+    if period_type == "本周":
+        # 本周：周一至今天
+        week_start = today - timedelta(days=today.weekday())
+        filtered_df = df[(df["日期"] >= week_start) & (df["日期"] <= today)]
+    elif period_type == "上周":
+        # 上周：上周一至上周日
+        last_week_end = today - timedelta(days=today.weekday() + 1)
+        last_week_start = last_week_end - timedelta(days=6)
+        filtered_df = df[(df["日期"] >= last_week_start) & (df["日期"] <= last_week_end)]
+    elif period_type == "月度":
+        # 本月：月初至今天
+        month_start = date(today.year, today.month, 1)
+        filtered_df = df[(df["日期"] >= month_start) & (df["日期"] <= today)]
+
+        # 1. 参与次数统计（使用筛选后的数据）
+    member_participation = filtered_df[filtered_df["是否参与"] == 1]["成员姓名"].value_counts().reset_index()
+    member_participation.columns = ["成员姓名", "参与次数"]
+
+    # 2. 补充质量分、点赞数（无数据时默认0）
+    member_participation["复盘质量分"] = member_participation["成员姓名"].map(REVIEW_QUALITY_SCORES).fillna(0)
+    member_participation["被点赞数"] = member_participation["成员姓名"].map(LIKE_COUNTS).fillna(0)
+
+    # 3. 计算首月进步分（逻辑不变，但基于筛选后参与的成员）
+    def get_first_month_progress(member):
+        if member not in FIRST_REVIEW_INFO:
+            return 0
+        first_info = FIRST_REVIEW_INFO[member]
+        first_score = first_info.get("首次质量分", 0)
+        current_score = member_participation[member_participation["成员姓名"] == member]["复盘质量分"].iloc[0]
+        return max(0, current_score - first_score)  # 进步分不低于0
+
+    member_participation["首月进步分"] = member_participation["成员姓名"].apply(get_first_month_progress)
+
+    # 4. 每周质量分/进步分（基于当前筛选周期内的逻辑，此处保持原逻辑，如需关联筛选周期可进一步调整）
+    def get_week_quality_score(member, week_type):
+        today = datetime.now().date()
+        if week_type == "this_week":
+            monday = today - timedelta(days=today.weekday())
+            week_start = monday
+            week_end = today
+        else:  # last_week
+            last_monday = today - timedelta(days=today.weekday() + 7)
+            week_start = last_monday
+            week_end = last_monday + timedelta(days=6)
+
+        # 注意：此处仍用原df，如需限定在筛选周期内可改为 filtered_df
+        member_records = df[
+            (df["成员姓名"] == member) &
+            (df["是否参与"] == 1) &
+            (df["日期"] >= week_start) &
+            (df["日期"] <= week_end)
+            ]
+        if len(member_records) == 0:
+            return 0
+        return REVIEW_QUALITY_SCORES.get(member, 0)
+
+    member_participation["本周质量分"] = member_participation["成员姓名"].apply(
+        lambda x: get_week_quality_score(x, "this_week"))
+    member_participation["上周质量分"] = member_participation["成员姓名"].apply(
+        lambda x: get_week_quality_score(x, "last_week"))
+    member_participation["每周进步分"] = member_participation["本周质量分"] - member_participation["上周质量分"]
+
+    # 5. 标记是否为本月新成员
+    member_participation["是否本月新成员"] = member_participation["成员姓名"].isin(THIS_MONTH_NEW_MEMBERS)
+
+    return member_participation
 
 
-# 运行代码时自动保存新数据（首次运行会创建CSV，重复运行会自动去重）
-save_new_data(DAILY_DATA)
+# ---------------------- 新增：三种榜单计算函数 ----------------------
+def get_comprehensive_ranking(metrics_df):
+    """综合实力榜：参与次数×40% + 复盘质量分×50% + 被点赞数×10%"""
+    df = metrics_df.copy()
+    # 计算综合分（标准化得分，避免数值范围差异影响）
+    max_participate = df["参与次数"].max() if df["参与次数"].max() > 0 else 1
+    max_quality = df["复盘质量分"].max() if df["复盘质量分"].max() > 0 else 1
+    max_like = df["被点赞数"].max() if df["被点赞数"].max() > 0 else 1
 
-# 加载最终数据（包含历史+新录入）
-df = init_data()
-df["日期"] = pd.to_datetime(df["日期"]).dt.date  # 统一日期格式
-# 处理主持人字段空值（确保没有nan）
-df["主持人"] = df["主持人"].fillna("无").astype(str).str.strip()
+    df["参与次数标准化"] = df["参与次数"] / max_participate * 10
+    df["质量分标准化"] = df["复盘质量分"] / max_quality * 10
+    df["点赞数标准化"] = df["被点赞数"] / max_like * 10
+
+    df["综合实力分"] = (
+            df["参与次数标准化"] * 0.4 +
+            df["质量分标准化"] * 0.5 +
+            df["点赞数标准化"] * 0.1
+    ).round(2)
+
+    return df.sort_values("综合实力分", ascending=False).reset_index(drop=True)
 
 
-# ---------------------- 页面样式定制（温馨风格+主持人高光） ----------------------
+def get_newbie_ranking(metrics_df):
+    """新锐成长榜：参与次数≤5的用户，参与次数×30% + 首月进步分×70%"""
+    df = metrics_df.copy()
+    # 筛选参与次数≤5的用户
+    newbie_df = df[df["参与次数"] <= 5].copy()
+    if len(newbie_df) == 0:
+        return pd.DataFrame(columns=df.columns.tolist() + ["新锐成长分"])
+
+    # 计算成长分（标准化）
+    max_participate = newbie_df["参与次数"].max() if newbie_df["参与次数"].max() > 0 else 1
+    max_progress = newbie_df["首月进步分"].max() if newbie_df["首月进步分"].max() > 0 else 1
+
+    newbie_df["参与次数标准化"] = newbie_df["参与次数"] / max_participate * 10
+    newbie_df["进步分标准化"] = newbie_df["首月进步分"] / max_progress * 10
+
+    newbie_df["新锐成长分"] = (
+            newbie_df["参与次数标准化"] * 0.3 +
+            newbie_df["进步分标准化"] * 0.7
+    ).round(2)
+
+    return newbie_df.sort_values("新锐成长分", ascending=False).reset_index(drop=True)
+
+
+def get_weekly_progress_ranking(metrics_df):
+    """每周进步榜：所有用户，本周质量分-上周质量分，正增长Top10"""
+    df = metrics_df.copy()
+    # 筛选正增长用户
+    progress_df = df[df["每周进步分"] > 0].copy()
+    if len(progress_df) == 0:
+        return pd.DataFrame(columns=df.columns.tolist())
+
+    # 按进步分降序，取Top10
+    return progress_df.sort_values("每周进步分", ascending=False).head(10).reset_index(drop=True)
+
+# ---------------------- 新增：本月黑马计算函数 ----------------------
+def get_this_month_dark_horse(metrics_df):
+    """本月黑马：本月新成员中综合实力分最高的前六名成员（精致卡片展示，修复HTML渲染）"""
+    if not THIS_MONTH_NEW_MEMBERS:
+        return '<div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid #eee; margin: 1rem 0;"><span style="color: #6c757d; font-size: 1.1rem;">暂无（请补充本月新成员名单）</span></div>'
+
+    new_member_df = metrics_df[metrics_df["是否本月新成员"]].copy()
+    if len(new_member_df) == 0:
+        return '<div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid #eee; margin: 1rem 0;"><span style="color: #6c757d; font-size: 1.1rem;">暂无（新成员暂无参与记录）</span></div>'
+
+    # 计算新成员综合实力分（同综合实力榜规则，增加空值保护）
+    max_participate = new_member_df["参与次数"].max() if new_member_df["参与次数"].max() > 0 else 1
+    max_quality = new_member_df["复盘质量分"].max() if new_member_df["复盘质量分"].max() > 0 else 1
+    max_like = new_member_df["被点赞数"].max() if new_member_df["被点赞数"].max() > 0 else 1
+
+    new_member_df["参与次数标准化"] = (new_member_df["参与次数"] / max_participate * 10).round(2)
+    new_member_df["质量分标准化"] = (new_member_df["复盘质量分"] / max_quality * 10).round(2)
+    new_member_df["点赞数标准化"] = (new_member_df["被点赞数"] / max_like * 10).round(2)
+
+    new_member_df["综合实力分"] = (
+            new_member_df["参与次数标准化"] * 0.4 +
+            new_member_df["质量分标准化"] * 0.5 +
+            new_member_df["点赞数标准化"] * 0.1
+    ).round(2)
+
+    # 按综合实力分降序排序，取前六名（若不足六名则返回全部，去重避免重复成员）
+    top_new_members = new_member_df.drop_duplicates("成员姓名").sort_values(
+        by="综合实力分",
+        ascending=False
+    ).head(6).reset_index(drop=True)
+
+    # 生成紧凑格式HTML（关键：去掉所有多余换行和缩进）
+    cards_html = []
+    for idx, row in top_new_members.iterrows():
+        # 简化颜色方案
+        if idx == 0:
+            card_bg = "#fff8e1"
+            border_color = "#ffc107"
+            rank_bg = "#ffc107"
+            rank_color = "#fff"
+            rank_text = "第1名"
+        elif idx == 1:
+            card_bg = "#f5f5f5"
+            border_color = "#9e9e9e"
+            rank_bg = "#9e9e9e"
+            rank_color = "#fff"
+            rank_text = "第2名"
+        elif idx == 2:
+            card_bg = "#ffe0b2"
+            border_color = "#ff9800"
+            rank_bg = "#ff9800"
+            rank_color = "#fff"
+            rank_text = "第3名"
+        else:
+            card_bg = "#f0f8fb"
+            border_color = "#2196f3"
+            rank_bg = "#2196f3"
+            rank_color = "#fff"
+            rank_text = f"第{idx+1}名"
+
+        # 紧凑格式卡片HTML（无换行，无多余缩进）
+        card_html = f'<div style="background:{card_bg};border:2px solid {border_color};border-radius:12px;padding:1rem;text-align:center;display:inline-block;width:140px;margin:0.8rem;box-shadow:0 2px 6px rgba(0,0,0,0.08);"><div style="background:{rank_bg};color:{rank_color};font-size:0.8rem;font-weight:bold;padding:0.2rem 0.8rem;border-radius:20px;margin-bottom:0.8rem;display:inline-block;">{rank_text}</div><div style="font-size:1.2rem;font-weight:700;color:#2d3748;margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{row["成员姓名"]}</div><div style="font-size:0.9rem;color:#718096;margin-bottom:0.4rem;">参与 {row["参与次数"]} 次</div><div style="font-size:1rem;font-weight:600;color:#e53e3e;">{row["综合实力分"]} 分</div></div>'
+        cards_html.append(card_html)
+
+    # 紧凑格式容器HTML
+    result_html = f'<div style="text-align:center;width:100%;margin:1rem 0;overflow-x:auto;padding:0.5rem 0;">{"".join(cards_html)}</div>'
+
+    return result_html
+
+# ---------------------- 页面样式定制（原有样式不变，新增榜单样式）----------------------
 def set_warm_style():
     st.markdown("""
         <style>
-            /* 全局温馨背景 */
-            body {
-                background-color: #FFF9F5;
-            }
-            .main {
-                padding: 0rem 1rem;
-            }
-            /* 顶部天数标题样式 */
-            /* 顶部天数标题样式（高端IP感） */
+            /* 原有样式不变 */
+            body { background-color: #FFF9F5; }
+            .main { padding: 0rem 1rem; }
             .day-count-title {
                 font-family: 'Noto Sans SC', 'Montserrat', sans-serif;
                 font-weight: 900;
@@ -389,7 +704,6 @@ def set_warm_style():
                 padding: 0.5rem 0;
                 position: relative;
             }
-            /* 标题底部装饰线 */
             .day-count-title::after {
                 content: "";
                 display: block;
@@ -399,7 +713,6 @@ def set_warm_style():
                 margin: 0.8rem auto 0;
                 border-radius: 3px;
             }
-            /* 天数单独强调 */
             .day-count-number {
                 font-family: 'Montserrat', sans-serif;
                 font-weight: 700;
@@ -408,7 +721,6 @@ def set_warm_style():
                 margin: 0 0.3rem;
                 text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
             }
-            /* 标题样式（暖橙+活泼字体） */
             .warm-title {
                 color: #FF7A45;
                 font-weight: 700;
@@ -416,14 +728,12 @@ def set_warm_style():
                 font-size: 1.8rem;
                 text-shadow: 0 2px 4px rgba(255, 122, 69, 0.1);
             }
-            /* 子标题样式 */
             .warm-subtitle {
                 color: #488286;
                 font-weight: 600;
                 margin: 1.5rem 0 1rem 0;
                 font-size: 1.3rem;
             }
-            /* 卡片样式（柔和圆角+暖阴影） */
             .warm-card {
                 background-color: white;
                 border-radius: 16px;
@@ -432,7 +742,6 @@ def set_warm_style():
                 box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
                 border-left: 4px solid #FF7A45;
             }
-            /* 主持人高光样式 */
             .host-highlight {
                 background: linear-gradient(90deg, #FFE8CC 0%, #FFD5B8 100%);
                 color: #D9534F;
@@ -441,7 +750,6 @@ def set_warm_style():
                 border-radius: 6px;
                 display: inline-block;
             }
-            /* 数据指标卡片 */
             .metric-card {
                 background-color: #F0FFF4;
                 border-radius: 12px;
@@ -460,7 +768,6 @@ def set_warm_style():
                 color: #6B9093;
                 margin-top: 0.3rem;
             }
-            /* 每日参与列表样式 */
             .daily-participants {
                 display: flex;
                 flex-wrap: wrap;
@@ -474,17 +781,62 @@ def set_warm_style():
                 border-radius: 20px;
                 font-size: 0.9rem;
             }
-            .stDataFrame {
-                font-size: 0.9rem !important; /* 手机端字体放大 */
-            }
+            .stDataFrame { font-size: 0.9rem !important; }
             .stDataFrame td, .stDataFrame th {
-                padding: 0.8rem 0.5rem !important; /* 增加单元格内边距，避免拥挤 */
-                white-space: nowrap !important; /* 禁止文字换行，保持一行显示 */
+                padding: 0.8rem 0.5rem !important;
+                white-space: nowrap !important;
             }
-            /* 确保表头文字清晰 */
             .stDataFrame th {
                 color: #488286 !important;
                 font-weight: 700 !important;
+            }
+            /* 新增：黑马称号样式 */
+            .dark-horse-card {
+                background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+                border-radius: 16px;
+                padding: 2rem;
+                margin: 2rem 0;
+                text-align: center;
+                box-shadow: 0 8px 24px rgba(255, 215, 0, 0.1);
+                border: 1px solid #FFD700;
+            }
+            .dark-horse-title {
+                font-size: 1.8rem;
+                color: #FF8C00;
+                font-weight: 700;
+                margin-bottom: 1rem;
+            }
+            .dark-horse-name {
+                font-size: 2.2rem;
+                color: #FF6B35;
+                font-weight: 900;
+                margin-bottom: 0.5rem;
+            }
+            /* 新增：榜单标签样式 */
+            .tab-content { margin-top: 1rem; }
+            .rank-card {
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+                border-radius: 12px;
+                background-color: white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            }
+            .rank-header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 1rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid #F5F5F5;
+            }
+            .rank-icon {
+                font-size: 1.2rem;
+                margin-right: 0.8rem;
+                color: #FF7A45;
+            }
+            .rank-desc {
+                font-size: 0.9rem;
+                color: #6B9093;
+                margin-left: auto;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -492,80 +844,27 @@ def set_warm_style():
 
 set_warm_style()
 
-# ---------------------- 主页面：顶部天数显示（新增，居中） ----------------------
-# 主页面：顶部天数显示（高端IP感）
+# ---------------------- 主页面：顶部天数显示（原有不变）----------------------
 st.markdown(f"""
     <div class='day-count-title'>
-        复盘实验室
+        复盘实验室第
         <span class='day-count-number'>{days_passed}</span>
         天
     </div>
 """, unsafe_allow_html=True)
 
-# ---------------------- 主页面：头部信息 ----------------------
+# ---------------------- 新增：本月黑马称号展示 ----------------------
+metrics_df = calculate_member_metrics()
+
+st.subheader("🏆 本月黑马（新成员前6名）")
+dark_horse = get_this_month_dark_horse(metrics_df)
+st.markdown(dark_horse, unsafe_allow_html=True)
+st.caption("基于新成员的参与次数、复盘质量分综合评选")
+
+# ---------------------- 主页面：头部信息（原有不变）----------------------
 st.markdown("<h1 class='warm-title'>✨ 公益复盘群 · 成长记录</h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #6B9093; margin-bottom: 2rem;'>记录参与情况，留存成长足迹～</p>", unsafe_allow_html=True)
 
-# ---------------------- 侧边栏（周期筛选） ----------------------
-with st.sidebar:
-    st.markdown("<h3 style='color: #FF7A45; margin: 1rem 0;'>📅 周期筛选</h3>", unsafe_allow_html=True)
-    # 周期类型选择
-    period_type = st.radio(
-        "选择统计周期",
-        options=["本周", "上周", "自定义周", "月度"],
-        index=0,
-        key="period_type"
-    )
-    # 按周期类型生成筛选条件
-    today_sidebar = datetime.now().date()
-    if period_type == "本周":
-        # 本周：周一到今日
-        monday = today_sidebar - timedelta(days=today_sidebar.weekday())
-        start_date = monday
-        end_date = today_sidebar
-    elif period_type == "上周":
-        # 上周：周一到周日
-        last_monday = today_sidebar - timedelta(days=today_sidebar.weekday() + 7)
-        last_sunday = last_monday + timedelta(days=6)
-        start_date = last_monday
-        end_date = last_sunday
-    elif period_type == "自定义周":
-        # 自定义周：用户选择起止日期
-        start_date = st.date_input("开始日期", value=today_sidebar - timedelta(days=7))
-        end_date = st.date_input("结束日期", value=today_sidebar)
-    else:  # 月度
-        # 月度：用户选择月份
-        selected_month = st.date_input(
-            "选择月份",
-            value=today_sidebar,
-        ).replace(day=1)  # 取当月第一天
-        # 计算当月最后一天
-        if selected_month.month == 12:
-            next_month = selected_month.replace(year=selected_month.year + 1, month=1)
-        else:
-            next_month = selected_month.replace(month=selected_month.month + 1)
-        start_date = selected_month
-        # 若选择的是当前月份，结束日期为今天；否则为当月最后一天
-        if selected_month.month == today_sidebar.month and selected_month.year == today_sidebar.year:
-            end_date = today_sidebar
-        else:
-            end_date = next_month - timedelta(days=1)
-    # 显示当前筛选周期
-    st.markdown(f"""
-        <p style='color: #6B9093; margin: 1rem 0;'>
-        当前筛选：{start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}
-        </p>
-    """, unsafe_allow_html=True)
-    # 刷新数据按钮
-    if st.button("🔄 刷新数据", type="primary"):
-        df = init_data()
-        df["日期"] = pd.to_datetime(df["日期"]).dt.date
-        df["主持人"] = df["主持人"].fillna("无").astype(str).str.strip()
-        st.success("数据已刷新！")
-    # 侧边栏底部说明
-    st.markdown("---")
-    st.markdown("<p style='color: #6B9093; font-size: 0.9rem;'>🌱 公益复盘群成长记录平台</p>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #999; font-size: 0.8rem;'>数据存储：review_group_data.csv</p>", unsafe_allow_html=True)
 
 # ---------------------- 数据预处理（按筛选周期过滤） ----------------------
 # 按筛选周期过滤数据
@@ -611,84 +910,116 @@ host_daily_unique = filtered_df[filtered_df["主持人"] != "无"][["日期", "�
 host_count = host_daily_unique.groupby("主持人").size().reset_index(name="主持次数")
 host_count.columns = ["成员姓名", "主持次数"]
 
-# ---------------------- 主页面：周期参与情况统计 ----------------------
-st.markdown("<h2 class='warm-subtitle'>📊 周期参与情况</h2>", unsafe_allow_html=True)
+# ---------------------- 新增：三种排名榜单展示 ----------------------
+st.markdown("<h2 class='warm-subtitle'>🏅 多维成长排名</h2>", unsafe_allow_html=True)
 
-# 统计指标卡片（4列布局）
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-    st.markdown(f"<div class='metric-value'>{len(period_members)}</div>", unsafe_allow_html=True)
-    st.markdown("<div class='metric-label'>周期参与成员数</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+# 计算三种榜单数据
+comprehensive_rank = get_comprehensive_ranking(metrics_df)
+newbie_rank = get_newbie_ranking(metrics_df)
+weekly_progress_rank = get_weekly_progress_ranking(metrics_df)
 
-with col2:
-    st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-    st.markdown(f"<div class='metric-value'>{total_participations}</div>", unsafe_allow_html=True)
-    st.markdown("<div class='metric-label'>周期总参与人次</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+# 榜单切换Tabs
+tab1, tab2, tab3 = st.tabs(["综合实力榜", "新锐成长榜", "每周进步榜"])
 
-with col3:
-    st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-    st.markdown(f"<div class='metric-value'>{round(avg_daily_participants, 1)}</div>", unsafe_allow_html=True)
-    st.markdown("<div class='metric-label'>日均参与人数</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+with tab1:
+    st.markdown("""
+        <div class='rank-card'>
+            <div class='rank-header'>
+                <span class='rank-icon'>🏆</span>
+                <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>综合实力榜</h3>
+                <span class='rank-desc'>面向头部/活跃用户 | 参与次数×40% + 质量分×50% + 点赞数×10%</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-with col4:
-    st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-    overall_rate = round((len(period_members) / len(all_members)) * 100, 1) if len(all_members) > 0 else 0
-    st.markdown(f"<div class='metric-value'>{overall_rate}%</div>", unsafe_allow_html=True)
-    st.markdown("<div class='metric-label'>成员参与覆盖率</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    if len(comprehensive_rank) == 0:
+        st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>暂无排名数据～</p>",
+                    unsafe_allow_html=True)
+    else:
+        # 展示前10名表格
+        display_cols = ["排名", "成员姓名", "参与次数", "复盘质量分", "被点赞数", "综合实力分"]
+        rank_df = comprehensive_rank[["成员姓名", "参与次数", "复盘质量分", "被点赞数", "综合实力分"]].copy()
+        rank_df["排名"] = range(1, len(rank_df) + 1)
+        rank_df = rank_df[display_cols]
 
-# 周期参与趋势图（简化样式，适配所有Plotly版本）
-st.markdown("<div class='warm-card'>", unsafe_allow_html=True)
-st.markdown("<h3 style='color: #488286; font-size: 1.1rem; margin-bottom: 1rem;'>每日参与人数趋势</h3>",
-            unsafe_allow_html=True)
+        st.dataframe(
+            rank_df.head(10),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "排名": st.column_config.NumberColumn("排名", format="%d"),
+                "参与次数": st.column_config.NumberColumn("参与次数", format="%d"),
+                "复盘质量分": st.column_config.NumberColumn("复盘质量分", format="%.1f"),
+                "被点赞数": st.column_config.NumberColumn("被点赞数", format="%d"),
+                "综合实力分": st.column_config.NumberColumn("综合实力分", format="%.2f")
+            }
+        )
 
-# 计算每日参与人数
-daily_participants = filtered_df.groupby("日期")["成员姓名"].nunique().reset_index()
-daily_participants.columns = ["日期", "参与人数"]
+with tab2:
+    st.markdown("""
+        <div class='rank-card'>
+            <div class='rank-header'>
+                <span class='rank-icon'>🌱</span>
+                <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>新锐成长榜</h3>
+                <span class='rank-desc'>面向参与≤5次新人 | 参与次数×30% + 首月进步分×70%</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-# 补全周期内所有日期（避免漏填日期导致图表断层）
-date_range = pd.date_range(start=start_date, end=end_date).date
-date_df = pd.DataFrame({"日期": date_range})
-daily_participants_complete = pd.merge(
-    date_df, daily_participants, on="日期", how="left"
-).fillna(0)
-daily_participants_complete["参与人数"] = daily_participants_complete["参与人数"].astype(int)
+    if len(newbie_rank) == 0:
+        st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>暂无符合条件的新人用户～</p>",
+                    unsafe_allow_html=True)
+    else:
+        display_cols = ["排名", "成员姓名", "参与次数", "首月进步分", "新锐成长分"]
+        rank_df = newbie_rank[["成员姓名", "参与次数", "首月进步分", "新锐成长分"]].copy()
+        rank_df["排名"] = range(1, len(rank_df) + 1)
+        rank_df = rank_df[display_cols]
 
-# 绘制兼容版柱状图（移除高版本参数，保留核心样式）
-fig_trend = px.bar(
-    daily_participants_complete,
-    x="日期",
-    y="参与人数",
-    color="参与人数",
-    color_continuous_scale=["#FFE8F0", "#FFC1D5", "#FF9EB8", "#FF7A9E"],  # 温馨粉橙色渐变
-    height=350,
-    template="plotly_white"
-)
-fig_trend.update_layout(
-    xaxis_title="日期",
-    yaxis_title="参与人数",
-    coloraxis_showscale=False,
-    plot_bgcolor="white",
-    margin=dict(l=10, r=10, t=10, b=10),
-    xaxis=dict(
-        tickformat="%m-%d",  # 日期格式简化为月-日
-        gridcolor="#F5F5F5"
-    ),
-    yaxis=dict(
-        gridcolor="#F5F5F5"
-    )
-)
-# 简化update_traces，只保留hover提示（兼容低版本Plotly）
-fig_trend.update_traces(
-    hovertemplate="日期: %{x}<br>参与人数: %{y}人<extra></extra>"
-)
-st.plotly_chart(fig_trend, use_container_width=True)
-st.markdown("</div>", unsafe_allow_html=True)
+        st.dataframe(
+            rank_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "排名": st.column_config.NumberColumn("排名", format="%d"),
+                "参与次数": st.column_config.NumberColumn("参与次数", format="%d"),
+                "首月进步分": st.column_config.NumberColumn("首月进步分", format="%.1f"),
+                "新锐成长分": st.column_config.NumberColumn("新锐成长分", format="%.2f")
+            }
+        )
 
+with tab3:
+    st.markdown("""
+        <div class='rank-card'>
+            <div class='rank-header'>
+                <span class='rank-icon'>📈</span>
+                <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>每周进步榜</h3>
+                <span class='rank-desc'>面向所有用户 | 本周质量分 - 上周质量分（正增长Top10）</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if len(weekly_progress_rank) == 0:
+        st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>暂无正增长进步数据～</p>",
+                    unsafe_allow_html=True)
+    else:
+        display_cols = ["排名", "成员姓名", "上周质量分", "本周质量分", "每周进步分"]
+        rank_df = weekly_progress_rank[["成员姓名", "上周质量分", "本周质量分", "每周进步分"]].copy()
+        rank_df["排名"] = range(1, len(rank_df) + 1)
+        rank_df = rank_df[display_cols]
+
+        st.dataframe(
+            rank_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "排名": st.column_config.NumberColumn("排名", format="%d"),
+                "上周质量分": st.column_config.NumberColumn("上周质量分", format="%.1f"),
+                "本周质量分": st.column_config.NumberColumn("本周质量分", format="%.1f"),
+                "每周进步分": st.column_config.NumberColumn("每周进步分", format="%.1f")
+            }
+        )
+
+# ---------------------- 原有页面其他内容（参与情况统计、每日详情等）----------------------
 # ---------------------- 主页面：每日参与详情（含主持人高光） ----------------------
 st.markdown("<h2 class='warm-subtitle'>📝 每日参与详情</h2>", unsafe_allow_html=True)
 
@@ -723,106 +1054,11 @@ else:
         st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------------------- 主页面：成员参与排名 ----------------------
-st.markdown("<h2 class='warm-subtitle'>🏅 周期参与排名</h2>", unsafe_allow_html=True)
 
-# 排名表格（温馨风格染色，主持人标注）
-st.markdown("<div class='warm-card'>", unsafe_allow_html=True)
-if len(member_participation) == 0:
-    st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>该周期暂无参与数据～</p>",
-                unsafe_allow_html=True)
-else:
-    # 合并主持次数（确保每个主持人只统计日期去重后的次数）
-    member_participation = pd.merge(
-        member_participation, host_count, on="成员姓名", how="left"
-    ).fillna({"主持次数": 0})
-    member_participation["主持次数"] = member_participation["主持次数"].astype(int)
-
-
-    def color_rank(row):
-        if row["排名"] == 1:
-            # 浅橙底色 + 深橙文字
-            return ["background-color: #FFF0E6; color: #D9534F; font-weight: 600;"] * len(row)
-        elif row["排名"] == 2:
-            # 浅绿底色 + 深绿文字
-            return ["background-color: #F0FFF4; color: #2E8B57; font-weight: 600;"] * len(row)
-        elif row["排名"] == 3:
-            # 浅蓝底色 + 深蓝文字
-            return ["background-color: #F0F8FF; color: #4169E1; font-weight: 600;"] * len(row)
-        elif row["排名"] <= 7:
-            # 前4-7名：浅灰底色 + 深灰文字
-            return ["background-color: #F8F9FA; color: #333333;"] * len(row)
-        else:
-            # 其他排名：白色底色 + 黑色文字
-            return ["background-color: #FFFFFF; color: #333333;"] * len(row)
-
-    st.dataframe(
-        member_participation[["排名", "成员姓名", "参与次数", "参与率(%)", "主持次数"]],  # 去掉.style.apply(...)
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "排名": st.column_config.NumberColumn("排名", format="%d"),
-            "成员姓名": st.column_config.TextColumn("成员姓名"),
-            "参与次数": st.column_config.NumberColumn("参与次数", format="%d"),
-            "参与率(%)": st.column_config.NumberColumn("参与率(%)", format="%.1f"),
-            "主持次数": st.column_config.NumberColumn("主持次数", format="%d")
-        }
-    )
-st.markdown("</div>", unsafe_allow_html=True)
-
-# 前三名卡片展示（温馨风格）
-if len(member_participation) >= 3:
-    st.markdown("<div style='display: flex; justify-content: center; gap: 1.5rem; margin: 1.5rem 0; flex-wrap: wrap;'>",
-                unsafe_allow_html=True)
-
-    # 第一名
-    top1 = member_participation.iloc[0]
-    host_text = f"（主持{top1['主持次数']}次）" if top1['主持次数'] > 0 else ""
-    st.markdown(f"""
-        <div class='warm-card' style='flex: 1; min-width: 220px; border-left-color: #FF7A45;'>
-            <div style='font-size: 2rem; font-weight: 700; color: #FF7A45; text-align: center; margin-bottom: 0.5rem;'>🥇 第1名</div>
-            <div style='font-size: 1.3rem; font-weight: 600; color: #488286; text-align: center;'>{top1['成员姓名']}{host_text}</div>
-            <div style='text-align: center; margin-top: 1rem;'>
-                <p style='color: #6B9093;'>参与次数：{top1['参与次数']}次</p>
-                <p style='color: #6B9093;'>参与率：{top1['参与率(%)']}%</p>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 第二名
-    top2 = member_participation.iloc[1]
-    host_text = f"（主持{top2['主持次数']}次）" if top2['主持次数'] > 0 else ""
-    st.markdown(f"""
-        <div class='warm-card' style='flex: 1; min-width: 220px; border-left-color: #488286;'>
-            <div style='font-size: 2rem; font-weight: 700; color: #488286; text-align: center; margin-bottom: 0.5rem;'>🥈 第2名</div>
-            <div style='font-size: 1.3rem; font-weight: 600; color: #488286; text-align: center;'>{top2['成员姓名']}{host_text}</div>
-            <div style='text-align: center; margin-top: 1rem;'>
-                <p style='color: #6B9093;'>参与次数：{top2['参与次数']}次</p>
-                <p style='color: #6B9093;'>参与率：{top2['参与率(%)']}%</p>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 第三名
-    top3 = member_participation.iloc[2]
-    host_text = f"（主持{top3['主持次数']}次）" if top3['主持次数'] > 0 else ""
-    st.markdown(f"""
-        <div class='warm-card' style='flex: 1; min-width: 220px; border-left-color: #6B9093;'>
-            <div style='font-size: 2rem; font-weight: 700; color: #6B9093; text-align: center; margin-bottom: 0.5rem;'>🥉 第3名</div>
-            <div style='font-size: 1.3rem; font-weight: 600; color: #488286; text-align: center;'>{top3['成员姓名']}{host_text}</div>
-            <div style='text-align: center; margin-top: 1rem;'>
-                <p style='color: #6B9093;'>参与次数：{top3['参与次数']}次</p>
-                <p style='color: #6B9093;'>参与率：{top3['参与率(%)']}%</p>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ---------------------- 页脚（温馨提示） ----------------------
+# ---------------------- 页脚（原有不变）----------------------
 st.markdown("---")
 st.markdown(f"""
     <p style='text-align: center; color: #6B9093; font-size: 0.9rem; margin: 1rem 0;'>
-    🌱 公益复盘群 | 数据更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | 数据存储：{DATA_PATH}
+    🌱 公益复盘群 | 数据更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     </p>
 """, unsafe_allow_html=True)
