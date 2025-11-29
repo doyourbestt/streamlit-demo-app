@@ -1,3 +1,5 @@
+from member_data import DAILY_DATA,daily_speeches
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,9 +8,6 @@ import plotly.express as px
 from datetime import datetime, timedelta, date
 from pathlib import Path
 import warnings
-
-import warnings
-import streamlit as st
 
 # 强化IP质感：字体组合+全局样式统一
 st.markdown("""
@@ -93,326 +92,6 @@ this_month_start = date(today.year, today.month, 1)
 this_month_end = date(today.year, today.month + 1, 1) - timedelta(days=1) if today.month < 12 else date(today.year + 1,
                                                                                                         1,
                                                                                                         1) - timedelta(days=1)
-
-# ---------------------- 【每日数据录入区】（原有数据不变）----------------------
-DAILY_DATA = [
-    # 本周六（2025-11-22）：主持人李韫
-    {"date_str": "2025-11-22", "member": "陈庚", "is_participate": 1, "host": "李韫", "review": ""},
-    {"date_str": "2025-11-22", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "自由之花", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "echo", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "李姐", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "李韫", "is_participate": 1, "host": "", "review": ""},  # 主持人自身也在参与列表
-    # 本周五（2025-11-21）：主持人小妮
-    {"date_str": "2025-11-21", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-21", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "七公主", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    # 本周四（2025-11-20）：主持人小马哥
-    {"date_str": "2025-11-20", "member": "陈庚", "is_participate": 1, "host": "小马哥", "review": ""},
-    {"date_str": "2025-11-20", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "echo", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "七公主", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    # 本周三（2025-11-19）：主持人浅夏
-    {"date_str": "2025-11-19", "member": "光影", "is_participate": 1, "host": "浅夏", "review": ""},
-    {"date_str": "2025-11-19", "member": "sora", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "echo", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "七公主", "is_participate": 1, "host": "", "review": ""},
-    # 本周二（2025-11-18）：主持人光影
-    {"date_str": "2025-11-18", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-18", "member": "sora", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "拈指花开", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "七公主", "is_participate": 1, "host": "", "review": ""},
-    # 本周一（2025-11-17）：主持人时成成
-    {"date_str": "2025-11-17", "member": "光影", "is_participate": 1, "host": "时成成", "review": ""},
-    {"date_str": "2025-11-17", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "echo", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "七公主", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月16日（周日）：主持人光影
-    {"date_str": "2025-11-16", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-16", "member": "桃子", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "王永涛", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "阿成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "鱼大爷", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月15日（周六）：主持人阳州
-    {"date_str": "2025-11-15", "member": "鱼鱼", "is_participate": 1, "host": "阳州", "review": ""},
-    {"date_str": "2025-11-15", "member": "阿成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "拈指花开", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-15", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月14日（周五）：主持人miss恩
-    {"date_str": "2025-11-14", "member": "光影", "is_participate": 1, "host": "miss恩", "review": ""},
-    {"date_str": "2025-11-14", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月13日（周四）：主持人小马哥
-    {"date_str": "2025-11-13", "member": "光影", "is_participate": 1, "host": "小马哥", "review": ""},
-    {"date_str": "2025-11-13", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "团子", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "小金", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月12日（周三）：主持人花满天
-    {"date_str": "2025-11-12", "member": "光影", "is_participate": 1, "host": "花满天", "review": ""},
-    {"date_str": "2025-11-12", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "花满天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月11日（周二）：主持人光影
-    {"date_str": "2025-11-11", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-11", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-11", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-11", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-11", "member": "拈指花开", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-11", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-
-    # 11月10日（周一）：主持人小妮
-    {"date_str": "2025-11-10", "member": "阿成", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-10", "member": "Sora", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "拈指花开", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "阿童", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "曾律师", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-
-# 1号（2025-11-01）：主持人小妮
-    {"date_str": "2025-11-01", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-01", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-01", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-01", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-01", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-
-    # 2号（2025-11-02）：主持人小妮
-    {"date_str": "2025-11-02", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-02", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "花满天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "李理", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-02", "member": "Betty", "is_participate": 1, "host": "", "review": ""},
-
-    # 3号（2025-11-03）：主持人光影
-    {"date_str": "2025-11-03", "member": "莫非", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-03", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-03", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-03", "member": "阿童", "is_participate": 1, "host": "", "review": ""},
-
-    # 4号（2025-11-04）：主持人小妮
-    {"date_str": "2025-11-04", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-04", "member": "Sora", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-
-    # 5号（2025-11-05）：主持人小妮
-    {"date_str": "2025-11-05", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-05", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-
-    # 6号（2025-11-06）：主持人小妮
-    {"date_str": "2025-11-06", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-06", "member": "桃桃", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "二月", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-
-    # 7号（2025-11-07）：主持人光影
-    {"date_str": "2025-11-07", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-07", "member": "小妍", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "桃桃", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "花满天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "李理", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "小金", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "二月", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-
-    # 8号（2025-11-08）：主持人小妮
-    {"date_str": "2025-11-08", "member": "光影", "is_participate": 1, "host": "小妮", "review": ""},
-    {"date_str": "2025-11-08", "member": "Libby", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "miss恩", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-
-    # 9号（2025-11-09）：主持人光影
-    {"date_str": "2025-11-09", "member": "Betty", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-09", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "白了个白", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "拈指花开", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "自由之花", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "阿信", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "九月", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-
-    # 11-09（主持人光影）
-    {"date_str": "2025-11-09", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-09", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "九月", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "Isa", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "Betty", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "小金", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "阿成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-09", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-
-    # 11-16（主持人光影）
-    {"date_str": "2025-11-16", "member": "光影", "is_participate": 1, "host": "光影", "review": ""},
-    {"date_str": "2025-11-16", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "陈庚", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "阿成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "Betty", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "九月", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "阿龙", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "Isa", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "姜姜好", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-
-    {"date_str": "2025-11-01", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-01", "member": "平平", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-03", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-03", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-04", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-05", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-06", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "平平", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-07", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-08", "member": "平平", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-10", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-11", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-12", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-13", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-14", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-16", "member": "桃子", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-17", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-18", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-19", "member": "echo", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-20", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-21", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-22", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-
-    # 11-23（主持人miss恩）
-    {"date_str": "2025-11-23", "member": "miss恩", "is_participate": 1, "host": "miss恩", "review": ""},
-    {"date_str": "2025-11-23", "member": "光影", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "夏天", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "鱼鱼", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "小马哥", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "小妮", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "时成成", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "李韫", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "阳州", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "匆匆", "is_participate": 1, "host": "", "review": ""},
-    {"date_str": "2025-11-23", "member": "浅夏", "is_participate": 1, "host": "", "review": ""},
-    # 新增日期数据示例（复制下面一行，修改日期、成员、主持人即可）
-    # {"date_str": "2025-11-23", "member": "成员姓名", "is_participate": 1, "host": "", "review": ""},
-    # 每个新日期只需在第一条记录填写主持人，其他成员留空
-]
 
 # ---------------------- 基础配置（原有配置不变）----------------------
 plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans', 'Arial Unicode MS']
@@ -793,8 +472,8 @@ st.markdown("<p style='text-align: center;'>基于本月新成员的参与次数
 
 # ---------------------- 在主界面添加新功能入口 ----------------------
 # 在现有代码的主界面部分（如侧边栏下方或主内容区）添加
-st.markdown("## 🌟 今日互动区")
-render_daily_review_interface()
+#st.markdown("## 🌟 今日互动区")
+#render_daily_review_interface()
 
 # ---------------------- 新增：三种榜单计算函数 ----------------------
 def get_comprehensive_ranking(metrics_df):
@@ -821,6 +500,9 @@ def get_newbie_ranking(metrics_df):
     """新锐成长榜：参与次数≤5的用户，参与次数×30% + 本周较上周增长次数×70%"""
     # 深拷贝避免修改原数据
     df = metrics_df.copy()
+
+    if len(df) == 0:
+        return df
 
     # ---------------------- 增强字段检查与兼容 ----------------------
     # 检查必要字段，给出明确报错提示
@@ -1228,6 +910,11 @@ with tab3:
 
 # ---------------------- 原有页面其他内容（参与情况统计、每日详情等）----------------------
 # ---------------------- 主页面：每日参与详情（含主持人高光） ----------------------
+daily_summary["日期"] = pd.to_datetime(daily_summary["日期"])
+daily_summary["成员发言"] = daily_summary["日期"].dt.strftime("%Y-%m-%d").map(daily_speeches)
+daily_summary["成员发言"] = daily_summary["成员发言"].fillna({i: {} for i in daily_summary.index})
+# 处理无发言记录的日期（默认空字典）
+daily_summary["成员发言"] = daily_summary["成员发言"].fillna({i: {} for i in daily_summary.index})
 st.markdown("<h2 class='warm-subtitle'>📝 每日参与详情</h2>", unsafe_allow_html=True)
 
 st.markdown("<div class='warm-card'>", unsafe_allow_html=True)
@@ -1236,29 +923,85 @@ if len(daily_summary) == 0:
                 unsafe_allow_html=True)
 else:
     for _, row in daily_summary.iterrows():
-        date_str = row["日期"].strftime("%Y-%m-%d")
+        # 2. 基础数据获取（日期、星期、主持人、参与成员）
+        # 关键修改：统一处理日期格式，仅保留年月日（兼容datetime/字符串）
+        date_val = row["日期"]
         weekday_map = {0: "周一", 1: "周二", 2: "周三", 3: "周四", 4: "周五", 5: "周六", 6: "周日"}
-        weekday = weekday_map[row["日期"].weekday()]
-        host = row["主持人"] if row["主持人"] != "无" else "未指定"
-        participants = row["参与成员"]
+        if pd.api.types.is_datetime64_any_dtype(date_val):
+            # 若为datetime类型（含时分秒），仅格式化年月日
+            date_str = date_val.strftime("%Y-%m-%d")
+            # 基于datetime获取星期（不受时分秒影响）
+            weekday = weekday_map[date_val.weekday()]
+        else:
+            # 若为字符串，尝试截取/格式化年月日（兼容"2025-11-29 14:30:00"或"2025-11-29"）
+            date_str = str(date_val).split(" ")[0]  # 按空格分割，只取前面的年月日部分
+            # 字符串日期尝试转datetime获取星期，失败则设为未知
+            try:
+                weekday_dt = pd.to_datetime(date_str)
+                weekday = weekday_map[weekday_dt.weekday()]
+            except:
+                weekday = "未知"
 
-        # 日期+主持人标题（主持人高光）
+        host = row["主持人"] if row["主持人"] != "无" else "未指定"
+        participants = row["参与成员"]  # 确保这是成员姓名列表（如 ["李阳州", "光影"]）
+
+        # 3. 关键：定义 member_speeches（从 row 中获取成员发言，无数据则设为空字典）
+        # 优先从 row 中取“成员发言”，如果没有则设为空字典，避免变量未定义
+        member_speeches = row.get("成员发言", {}) if isinstance(row, dict) else (
+            row["成员发言"] if "成员发言" in daily_summary.columns else {})
+        # 额外容错：如果获取到的不是字典（比如字符串/None），强制转为空字典
+        if not isinstance(member_speeches, dict):
+            member_speeches = {}
+
+        # 4. 渲染日期+主持人标题（原有逻辑保留，日期仅显示年月日）
         st.markdown(f"""
             <h4 style='color: #488286; margin-top: 1.5rem;'>
                 {date_str}（{weekday}）| 主持人：<span class='host-highlight'>{host}</span>
             </h4>
         """, unsafe_allow_html=True)
 
-        # 参与成员标签列表
-        st.markdown("<div class='daily-participants'>", unsafe_allow_html=True)
+        # 5. 渲染成员标签+发言内容（修复后）
+        st.markdown(
+            "<div class='daily-participants' style='display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 1rem 0;'>",
+            unsafe_allow_html=True)
         for member in participants:
-            # 主持人标签额外标注
+            # 5.1 获取当前成员的发言（无则显示“未记录发言内容”）
+            speech = member_speeches.get(member, "未记录发言内容")
+            # 5.2 区分主持人和普通成员的标签样式
             if member == host:
-                st.markdown(f"<span class='participant-tag host-highlight'>{member}（主持人）</span>",
-                            unsafe_allow_html=True)
+                tag_html = f"<span class='participant-tag host-highlight'>{member}（主持人）</span>"
             else:
-                st.markdown(f"<span class='participant-tag'>{member}</span>", unsafe_allow_html=True)
+                tag_html = f"<span class='participant-tag'>{member}</span>"
+            # 5.3 渲染“标签+发言”（垂直排列，样式优化）
+            st.markdown(f"""
+                <div style='width: calc(33.33% - 1rem); min-width: 250px;'>
+                    {tag_html}
+                    <p style='margin: 0.3rem 0 0 0; font-size: 0.9rem; color: #6b7280; line-height: 1.5; padding-left: 0.2rem;'>
+                        {speech}
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
+
+        # 6. 补充CSS样式（确保标签和发言排版美观）
+        st.markdown("""
+            <style>
+                .participant-tag {
+                    background: #f0f8fb; 
+                    color: #1b5e20; 
+                    padding: 0.4rem 1rem; 
+                    border-radius: 20px; 
+                    font-size: 0.95rem; 
+                    font-weight: 600;
+                    display: inline-block;
+                }
+                .host-highlight {
+                    background: linear-gradient(90deg, #FFE8CC 0%, #FFD5B8 100%);
+                    color: #D9534F;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
 st.markdown("</div>", unsafe_allow_html=True)
 
 
