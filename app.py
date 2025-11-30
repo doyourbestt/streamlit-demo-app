@@ -368,6 +368,9 @@ def get_this_month_dark_horse(metrics_df):
     # 基础列填充
     new_member_df["参与次数"] = new_member_df["参与次数"].fillna(0)
     new_member_df["复盘质量分"] = new_member_df["复盘质量分"].fillna(0)
+
+    #st.write("DataFrame list is:", new_member_df.columns.tolist())
+
     new_member_df["被点赞数"] = new_member_df["被点赞数"].fillna(0)
 
     # 修复：DataFrame 列读取（替代字典.get()）
@@ -444,8 +447,58 @@ def get_this_month_dark_horse(metrics_df):
     result_html = f'<div style="text-align:center;width:100%;margin:1rem 0;overflow-x:auto;padding:0.5rem 0;">{"".join(cards_html)}</div>'
 
     return result_html
-
 # ---------------------- 新增：核心分数计算函数 ----------------------
+def get_week_participation_count(member, week_type):
+    """
+    获取指定成员在指定周的参与次数
+    :param member: 成员姓名
+    :param week_type: "this_week"（本周） / "last_week"（上周）
+    :return: 该成员在指定周的参与次数（int）
+    """
+    today = datetime.now().date()
+    # 计算本周/上周的时间范围（周一至周日）
+    if week_type == "this_week":
+        # 本周：周一 00:00 至 今天
+        week_start = today - timedelta(days=today.weekday())
+        week_end = today
+    else:  # last_week
+        # 上周：上周一 00:00 至上周日 23:59
+        last_monday = today - timedelta(days=today.weekday() + 7)
+        week_start = last_monday
+        week_end = last_monday + timedelta(days=6)
+
+    # 筛选该成员在指定周内的有效参与记录（是否参与=1）
+    member_records = df[
+        (df["成员姓名"] == member) &
+        (df["是否参与"] == 1) &
+        (df["日期"] >= week_start) &
+        (df["日期"] <= week_end)
+    ]
+    # 返回参与次数（记录数），无记录则返回0
+    return len(member_records)
+
+def get_week_quality_score(member, week_type):
+    today = datetime.now().date()
+    if week_type == "this_week":
+        monday = today - timedelta(days=today.weekday())
+        week_start = monday
+        week_end = today
+    else:  # last_week
+        last_monday = today - timedelta(days=today.weekday() + 7)
+        week_start = last_monday
+        week_end = last_monday + timedelta(days=6)
+
+    # 注意：此处仍用原df，如需限定在筛选周期内可改为 filtered_df
+    member_records = df[
+        (df["成员姓名"] == member) &
+        (df["是否参与"] == 1) &
+        (df["日期"] >= week_start) &
+        (df["日期"] <= week_end)
+        ]
+    if len(member_records) == 0:
+        return 0
+    return REVIEW_QUALITY_SCORES.get(member, 0)
+
 def calculate_member_metrics():
     """计算每个成员的核心指标（参与次数、质量分、点赞数、进步分等）"""
     # 新增：根据侧边栏选择的周期筛选数据
@@ -464,13 +517,24 @@ def calculate_member_metrics():
         month_start = date(today.year, today.month, 1)
         filtered_df = df[(df["日期"] >= month_start) & (df["日期"] <= today)]
 
-    # 1. 参与次数统计（使用筛选后的数据）
+    # 1. 参与次数统计（使用筛选后的数据）- 先定义参与次数统计
     member_participation = filtered_df[filtered_df["是否参与"] == 1]["成员姓名"].value_counts().reset_index()
     member_participation.columns = ["成员姓名", "参与次数"]
+    member_participation["本周参与次数"] = member_participation["成员姓名"].apply(
+        lambda x: get_week_participation_count(x, "this_week"))
+    # 计算上周参与次数
+    member_participation["上周参与次数"] = member_participation["成员姓名"].apply(
+        lambda x: get_week_participation_count(x, "last_week"))
 
-    # 2. 补充质量分、点赞数（无数据时默认0）
-    member_participation["复盘质量分"] = member_participation["成员姓名"].map(REVIEW_QUALITY_SCORES).fillna(0)
-    member_participation["被点赞数"] = member_participation["成员姓名"].map(LIKE_COUNTS).fillna(0)
+    # 处理点赞数合并（现在member_participation已定义）
+    like_counts_df = pd.DataFrame(list(LIKE_COUNTS.items()), columns=["成员姓名", "被点赞数"])
+    member_participation = member_participation.merge(
+        like_counts_df,
+        on="成员姓名",
+        how="left"  # 左连接确保所有成员都保留
+    )
+    # 填充未被点赞的成员为0
+    member_participation["被点赞数"] = member_participation["被点赞数"].fillna(0).astype(int)
 
     # 【新增】3. 补充主持次数（从原始df中提取每个成员的总主持次数）
     # 由于df中每个成员的"主持次数"字段已在process_daily_data中计算为总次数，直接取每个成员的最大值即可
@@ -478,6 +542,10 @@ def calculate_member_metrics():
     member_participation = member_participation.merge(host_counts, on="成员姓名", how="left")
     # 填充未主持过的成员为0
     member_participation["主持次数"] = member_participation["主持次数"].fillna(0).astype(int)
+
+    member_participation["复盘质量分"] = member_participation["成员姓名"].apply(
+        lambda x: REVIEW_QUALITY_SCORES.get(x, 0)  # 从质量分字典获取，默认0
+    )
 
     # 4. 计算首月进步分（逻辑不变，但基于筛选后参与的成员）
     def get_first_month_progress(member):
@@ -509,34 +577,8 @@ def calculate_member_metrics():
 
     member_participation["首月进步分"] = member_participation["成员姓名"].apply(get_first_month_progress)
 
-    # 5. 每周质量分/进步分（基于当前筛选周期内的逻辑，此处保持原逻辑，如需关联筛选周期可进一步调整）
-    def get_week_quality_score(member, week_type):
-        today = datetime.now().date()
-        if week_type == "this_week":
-            monday = today - timedelta(days=today.weekday())
-            week_start = monday
-            week_end = today
-        else:  # last_week
-            last_monday = today - timedelta(days=today.weekday() + 7)
-            week_start = last_monday
-            week_end = last_monday + timedelta(days=6)
-
-        # 注意：此处仍用原df，如需限定在筛选周期内可改为 filtered_df
-        member_records = df[
-            (df["成员姓名"] == member) &
-            (df["是否参与"] == 1) &
-            (df["日期"] >= week_start) &
-            (df["日期"] <= week_end)
-            ]
-        if len(member_records) == 0:
-            return 0
-        return REVIEW_QUALITY_SCORES.get(member, 0)
-
-    member_participation["本周质量分"] = member_participation["成员姓名"].apply(
-        lambda x: get_week_quality_score(x, "this_week"))
-    member_participation["上周质量分"] = member_participation["成员姓名"].apply(
-        lambda x: get_week_quality_score(x, "last_week"))
-    member_participation["每周进步分"] = member_participation["本周质量分"] - member_participation["上周质量分"]
+    # ========== 每周进步分 = 本周参与次数 - 上周参与次数 ==========
+    member_participation["每周进步分"] = member_participation["本周参与次数"] - member_participation["上周参与次数"]
 
     # 6. 标记是否为本月新成员
     member_participation["是否本月新成员"] = member_participation["成员姓名"].isin(THIS_MONTH_NEW_MEMBERS)
@@ -662,17 +704,28 @@ def get_newbie_ranking(metrics_df):
     # 按成长分降序排序
     return newbie_df.sort_values("新锐成长分", ascending=False).reset_index(drop=True)
 
+
 def get_weekly_progress_ranking(metrics_df):
-    """每周进步榜：所有用户，本周质量分-上周质量分，正增长Top10"""
+    """每周进步榜：所有用户，本周参与次数-上周参与次数，正增长Top10"""
     df = metrics_df.copy()
+
+    # 确保参与次数字段存在
+    if "本周参与次数" not in df.columns or "上周参与次数" not in df.columns:
+        # 计算本周和上周参与次数（兼容旧数据）
+        df["本周参与次数"] = df["成员姓名"].apply(lambda x: get_week_participation_count(x, "this_week"))
+        df["上周参与次数"] = df["成员姓名"].apply(lambda x: get_week_participation_count(x, "last_week"))
+
+    # 计算每周进步分（本周参与次数 - 上周参与次数）
+    df["每周进步分"] = df["本周参与次数"] - df["上周参与次数"]
+
     # 筛选正增长用户
     progress_df = df[df["每周进步分"] > 0].copy()
     if len(progress_df) == 0:
-        return pd.DataFrame(columns=df.columns.tolist())
+        # 确保返回包含所需列的空数据框
+        return pd.DataFrame(columns=["成员姓名", "上周参与次数", "本周参与次数", "每周进步分"])
 
     # 按进步分降序，取Top10
     return progress_df.sort_values("每周进步分", ascending=False).head(10).reset_index(drop=True)
-
 
 # ---------------------- 页面样式定制（原有样式不变，新增榜单样式）----------------------
 def set_warm_style():
@@ -972,8 +1025,8 @@ with tab3:
         st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>暂无正增长进步数据～</p>",
                     unsafe_allow_html=True)
     else:
-        display_cols = ["排名", "成员姓名", "上周质量分", "本周质量分", "每周进步分"]
-        rank_df = weekly_progress_rank[["成员姓名", "上周质量分", "本周质量分", "每周进步分"]].copy()
+        display_cols = ["排名", "成员姓名", "上周参与次数", "本周参与次数", "每周进步分"]
+        rank_df = weekly_progress_rank[["成员姓名", "上周参与次数", "本周参与次数", "每周进步分"]].copy()
         rank_df["排名"] = range(1, len(rank_df) + 1)
         rank_df = rank_df[display_cols]
 
@@ -983,9 +1036,9 @@ with tab3:
             hide_index=True,
             column_config={
                 "排名": st.column_config.NumberColumn("排名", format="%d"),
-                "上周质量分": st.column_config.NumberColumn("上周质量分", format="%.1f"),
-                "本周质量分": st.column_config.NumberColumn("本周质量分", format="%.1f"),
-                "每周进步分": st.column_config.NumberColumn("每周进步分", format="%.1f")
+                "上周参与次数": st.column_config.NumberColumn("上周参与次数", format="%d"),
+                "本周参与次数": st.column_config.NumberColumn("本周参与次数", format="%d"),
+                "每周进步分": st.column_config.NumberColumn("每周进步分", format="%d")
             }
         )
 
