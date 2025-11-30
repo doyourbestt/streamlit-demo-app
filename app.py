@@ -68,7 +68,7 @@ st.markdown("""
 warnings.filterwarnings("ignore")
 # ---------------------- 核心配置（用户后续需填写的内容）----------------------
 # 1. 本月新成员名单（用户稍后填写，格式：["成员1", "成员2", ...]）
-THIS_MONTH_NEW_MEMBERS = ["李韫","豆皮","Libby","陈庚","阿龙","二月","七公主","匆匆","拈指花开","姜姜好","自由之花","白了个白","阿成","浅夏"]
+THIS_MONTH_NEW_MEMBERS = ["李韫","Libby","陈庚","阿龙","二月","七公主","匆匆","拈指花开","姜姜好","自由之花","阿成","浅夏"]
 
 # 2. 复盘质量分（用户稍后填写，格式：{成员姓名: 最新质量分, ...}，10分制）
 #REVIEW_QUALITY_SCORES = {}  # 示例：{"光影": 8.5, "小妮": 9.2, "小马哥": 7.8}
@@ -103,28 +103,68 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 def process_daily_data():
-    """直接处理DAILY_DATA为DataFrame，不依赖外部文件"""
+    """直接处理DAILY_DATA为DataFrame，不依赖外部文件
+    修复：列名校验 + 数据类型转换 + 空值处理，解决groupby求和报错
+    新增：统计每个成员的主持次数并合并到数据中
+    """
+    # 1. 基础数据转换 & 空值过滤
     df = pd.DataFrame(DAILY_DATA)
-    # 转换日期格式
-    df["日期"] = pd.to_datetime(df["date_str"]).dt.date
-    # 提取每日主持人（每个日期的第一个非空host）
+    if df.empty:
+        raise ValueError("DAILY_DATA 为空，请检查数据来源")
+
+    # 2. 核心修复1：强制校验/转换关键列（避免列名错误）
+    required_cols = ["date_str", "member", "is_participate", "host"]
+    for col in required_cols:
+        if col not in df.columns:
+            raise KeyError(f"DAILY_DATA 缺少必要列：{col}")
+
+    # 3. 转换日期格式（统一为date对象）
+    df["日期"] = pd.to_datetime(df["date_str"], errors="coerce").dt.date  # 错误日期转为NaT
+    df = df.dropna(subset=["日期"])  # 过滤无效日期行
+
+    # 4. 提取每日主持人（每个日期的第一个非空host）
     def get_daily_host(group):
         hosts = group["host"].dropna().unique()
         return hosts[0] if len(hosts) > 0 else "无"
-    daily_hosts = df.groupby("日期").apply(get_daily_host).to_dict()
+
+    daily_hosts = df.groupby("日期").apply(get_daily_host).to_dict()  # {日期: 主持人}
     df["主持人"] = df["日期"].map(daily_hosts)
-    # 重命名并筛选列
+
+    # 5. 核心修复2：重命名列 + 确保"是否参与"为数值类型
     df = df.rename(columns={
         "member": "成员姓名",
-        "is_participate": "是否参与",
+        "is_participate": "是否参与",  # 确保列名统一
         "review": "微复盘"
-    })[["日期", "成员姓名", "是否参与", "主持人", "微复盘"]]
+    })
+    # 强制转换"是否参与"为整数（处理布尔值/字符串等异常类型）
+    df["是否参与"] = pd.to_numeric(df["是否参与"], errors="coerce").fillna(0).astype(int)
 
-    # 新增：计算每个成员的参与次数并合并到原数据
+    # 6. 统计每个成员的主持次数（核心新增）
+    # 步骤1：将每日主持人映射表转为DataFrame，排除"无"主持人
+    host_df = pd.DataFrame({
+        "日期": list(daily_hosts.keys()),
+        "成员姓名": list(daily_hosts.values())
+    })
+    host_df = host_df[host_df["成员姓名"] != "无"]  # 过滤无效主持人
+
+    # 步骤2：统计每个成员的主持次数
+    host_counts = host_df.groupby("成员姓名").size().reset_index(name="主持次数")
+
+    # 7. 核心修复3：统计参与次数（确保列存在且为数值）
     participation_counts = df.groupby("成员姓名")["是否参与"].sum().reset_index()
     participation_counts.rename(columns={"是否参与": "参与次数"}, inplace=True)
+
+    # 8. 筛选最终列 + 合并数据
+    df = df[["日期", "成员姓名", "是否参与", "主持人", "微复盘"]]
+    # 合并参与次数 + 主持次数（左连接，未参与/未主持的填充0）
     df = df.merge(participation_counts, on="成员姓名", how="left")
+    df = df.merge(host_counts, on="成员姓名", how="left")
+
+    # 9. 空值填充（未主持/未参与的成员设为0）
+    df["参与次数"] = df["参与次数"].fillna(0).astype(int)
+    df["主持次数"] = df["主持次数"].fillna(0).astype(int)
 
     return df
 
@@ -304,36 +344,70 @@ with st.sidebar:
 
 # ---------------------- 新增：本月黑马计算函数 ----------------------
 def get_this_month_dark_horse(metrics_df):
-    """本月黑马：本月新成员中综合实力分最高的前六名成员（精致卡片展示，修复HTML渲染）"""
+    """本月黑马：本月新成员中综合实力分最高的前六名成员（精致卡片展示，修复HTML渲染）
+    新增：主持次数权重占30%，调整权重分配：参与次数0.25、复盘质量0.35、被点赞数0.1、主持次数0.3
+    修复：DataFrame 误用字典.get() 方法的报错
+    """
+    # 先定义 THIS_MONTH_NEW_MEMBERS（若未定义，需补充，示例值如下）
+    global THIS_MONTH_NEW_MEMBERS
+    if 'THIS_MONTH_NEW_MEMBERS' not in globals():
+        THIS_MONTH_NEW_MEMBERS = []  # 实际使用时替换为真实新成员列表
+
     if not THIS_MONTH_NEW_MEMBERS:
         return '<div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid #eee; margin: 1rem 0;"><span style="color: #6c757d; font-size: 1.1rem;">暂无（请补充本月新成员名单）</span></div>'
+
+    # 筛选本月新成员数据（先校验列存在性）
+    if "是否本月新成员" not in metrics_df.columns:
+        return '<div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid #eee; margin: 1rem 0;"><span style="color: #6c757d; font-size: 1.1rem;">暂无（数据缺少「是否本月新成员」列）</span></div>'
 
     new_member_df = metrics_df[metrics_df["是否本月新成员"]].copy()
     if len(new_member_df) == 0:
         return '<div style="background: #f8f9fa; border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid #eee; margin: 1rem 0;"><span style="color: #6c757d; font-size: 1.1rem;">暂无（新成员暂无参与记录）</span></div>'
 
-    # 计算新成员综合实力分（同综合实力榜规则，增加空值保护）
-    max_participate = new_member_df["参与次数"].max() if new_member_df["参与次数"].max() > 0 else 1
-    max_quality = new_member_df["复盘质量分"].max() if new_member_df["复盘质量分"].max() > 0 else 1
-    max_like = new_member_df["被点赞数"].max() if new_member_df["被点赞数"].max() > 0 else 1
+    # ========== 1. 空值填充 + 列存在性校验（核心修复） ==========
+    # 基础列填充
+    new_member_df["参与次数"] = new_member_df["参与次数"].fillna(0)
+    new_member_df["复盘质量分"] = new_member_df["复盘质量分"].fillna(0)
+    new_member_df["被点赞数"] = new_member_df["被点赞数"].fillna(0)
 
+    # 修复：DataFrame 列读取（替代字典.get()）
+    if "主持次数" in new_member_df.columns:
+        new_member_df["主持次数"] = new_member_df["主持次数"].fillna(0)
+    else:
+        new_member_df["主持次数"] = 0  # 无该列则默认0
+
+    # ========== 2. 指标标准化 ==========
+    # 参与次数标准化
+    max_participate = new_member_df["参与次数"].max() if new_member_df["参与次数"].max() > 0 else 1
     new_member_df["参与次数标准化"] = (new_member_df["参与次数"] / max_participate * 10).round(2)
+
+    # 复盘质量分标准化
+    max_quality = new_member_df["复盘质量分"].max() if new_member_df["复盘质量分"].max() > 0 else 1
     new_member_df["质量分标准化"] = (new_member_df["复盘质量分"] / max_quality * 10).round(2)
+
+    # 被点赞数标准化
+    max_like = new_member_df["被点赞数"].max() if new_member_df["被点赞数"].max() > 0 else 1
     new_member_df["点赞数标准化"] = (new_member_df["被点赞数"] / max_like * 10).round(2)
 
+    # 主持次数标准化
+    max_host = new_member_df["主持次数"].max() if new_member_df["主持次数"].max() > 0 else 1
+    new_member_df["主持次数标准化"] = (new_member_df["主持次数"] / max_host * 10).round(2)
+
+    # ========== 3. 综合实力分计算（主持占30%权重） ==========
     new_member_df["综合实力分"] = (
-            new_member_df["参与次数标准化"] * 0.4 +
-            new_member_df["质量分标准化"] * 0.5 +
-            new_member_df["点赞数标准化"] * 0.1
+            new_member_df["参与次数标准化"] * 0.25 +  # 参与次数权重25%
+            new_member_df["质量分标准化"] * 0.35 +  # 复盘质量权重35%
+            new_member_df["点赞数标准化"] * 0.1 +  # 被点赞数权重10%
+            new_member_df["主持次数标准化"] * 0.3  # 主持次数权重30%
     ).round(2)
 
-    # 按综合实力分降序排序，取前六名（若不足六名则返回全部，去重避免重复成员）
+    # 按综合实力分降序排序，取前六名（去重避免重复成员）
     top_new_members = new_member_df.drop_duplicates("成员姓名").sort_values(
         by="综合实力分",
         ascending=False
     ).head(6).reset_index(drop=True)
 
-    # 生成紧凑格式HTML（关键：去掉所有多余换行和缩进）
+    # 生成紧凑格式HTML卡片
     cards_html = []
     for idx, row in top_new_members.iterrows():
         # 简化颜色方案
@@ -360,10 +434,10 @@ def get_this_month_dark_horse(metrics_df):
             border_color = "#2196f3"
             rank_bg = "#2196f3"
             rank_color = "#fff"
-            rank_text = f"第{idx+1}名"
+            rank_text = f"第{idx + 1}名"
 
-        # 紧凑格式卡片HTML（无换行，无多余缩进）
-        card_html = f'<div style="background:{card_bg};border:2px solid {border_color};border-radius:12px;padding:1rem;text-align:center;display:inline-block;width:140px;margin:0.8rem;box-shadow:0 2px 6px rgba(0,0,0,0.08);"><div style="background:{rank_bg};color:{rank_color};font-size:0.8rem;font-weight:bold;padding:0.2rem 0.8rem;border-radius:20px;margin-bottom:0.8rem;display:inline-block;">{rank_text}</div><div style="font-size:1.2rem;font-weight:700;color:#2d3748;margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{row["成员姓名"]}</div><div style="font-size:0.9rem;color:#718096;margin-bottom:0.4rem;">参与 {row["参与次数"]} 次</div><div style="font-size:1rem;font-weight:600;color:#e53e3e;">{row["综合实力分"]} 分</div></div>'
+        # 卡片HTML（新增「主持X次」展示）
+        card_html = f'<div style="background:{card_bg};border:2px solid {border_color};border-radius:12px;padding:1rem;text-align:center;display:inline-block;width:140px;margin:0.8rem;box-shadow:0 2px 6px rgba(0,0,0,0.08);"><div style="background:{rank_bg};color:{rank_color};font-size:0.8rem;font-weight:bold;padding:0.2rem 0.8rem;border-radius:20px;margin-bottom:0.8rem;display:inline-block;">{rank_text}</div><div style="font-size:1.2rem;font-weight:700;color:#2d3748;margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{row["成员姓名"]}</div><div style="font-size:0.9rem;color:#718096;margin-bottom:0.2rem;">参与 {row["参与次数"]} 次</div><div style="font-size:0.9rem;color:#718096;margin-bottom:0.4rem;">主持 {int(row["主持次数"])} 次</div><div style="font-size:1rem;font-weight:600;color:#e53e3e;">{row["综合实力分"]} 分</div></div>'
         cards_html.append(card_html)
 
     # 紧凑格式容器HTML
@@ -390,7 +464,7 @@ def calculate_member_metrics():
         month_start = date(today.year, today.month, 1)
         filtered_df = df[(df["日期"] >= month_start) & (df["日期"] <= today)]
 
-        # 1. 参与次数统计（使用筛选后的数据）
+    # 1. 参与次数统计（使用筛选后的数据）
     member_participation = filtered_df[filtered_df["是否参与"] == 1]["成员姓名"].value_counts().reset_index()
     member_participation.columns = ["成员姓名", "参与次数"]
 
@@ -398,7 +472,14 @@ def calculate_member_metrics():
     member_participation["复盘质量分"] = member_participation["成员姓名"].map(REVIEW_QUALITY_SCORES).fillna(0)
     member_participation["被点赞数"] = member_participation["成员姓名"].map(LIKE_COUNTS).fillna(0)
 
-    # 3. 计算首月进步分（逻辑不变，但基于筛选后参与的成员）
+    # 【新增】3. 补充主持次数（从原始df中提取每个成员的总主持次数）
+    # 由于df中每个成员的"主持次数"字段已在process_daily_data中计算为总次数，直接取每个成员的最大值即可
+    host_counts = df.groupby("成员姓名")["主持次数"].max().reset_index()
+    member_participation = member_participation.merge(host_counts, on="成员姓名", how="left")
+    # 填充未主持过的成员为0
+    member_participation["主持次数"] = member_participation["主持次数"].fillna(0).astype(int)
+
+    # 4. 计算首月进步分（逻辑不变，但基于筛选后参与的成员）
     def get_first_month_progress(member):
         if member not in FIRST_REVIEW_INFO:
             return 0
@@ -428,7 +509,7 @@ def calculate_member_metrics():
 
     member_participation["首月进步分"] = member_participation["成员姓名"].apply(get_first_month_progress)
 
-    # 4. 每周质量分/进步分（基于当前筛选周期内的逻辑，此处保持原逻辑，如需关联筛选周期可进一步调整）
+    # 5. 每周质量分/进步分（基于当前筛选周期内的逻辑，此处保持原逻辑，如需关联筛选周期可进一步调整）
     def get_week_quality_score(member, week_type):
         today = datetime.now().date()
         if week_type == "this_week":
@@ -457,7 +538,7 @@ def calculate_member_metrics():
         lambda x: get_week_quality_score(x, "last_week"))
     member_participation["每周进步分"] = member_participation["本周质量分"] - member_participation["上周质量分"]
 
-    # 5. 标记是否为本月新成员
+    # 6. 标记是否为本月新成员
     member_participation["是否本月新成员"] = member_participation["成员姓名"].isin(THIS_MONTH_NEW_MEMBERS)
 
     return member_participation
@@ -917,6 +998,29 @@ daily_summary["成员发言"] = daily_summary["成员发言"].fillna({i: {} for 
 daily_summary["成员发言"] = daily_summary["成员发言"].fillna({i: {} for i in daily_summary.index})
 st.markdown("<h2 class='warm-subtitle'>📝 每日参与详情</h2>", unsafe_allow_html=True)
 
+def extract_core_summary(speech: str) -> str:
+    """提取发言核心摘要（默认取前50字+省略号，可自定义）"""
+    if len(speech) <= 20:
+        return speech
+    return speech[:20] + "..."
+
+def highlight_keywords(speech: str) -> str:
+    """自动高亮发言中的核心关键词（可根据业务扩展关键词列表）"""
+    # 自定义需高亮的关键词（覆盖复盘/工作/学习/休息等场景）
+    key_words = [
+        "番茄钟", "复盘", "休息", "冥想", "高效", "目标", "节奏","反思","学习"
+        "内耗", "理想", "韬光养晦", "锋芒毕露", "知行合一", "长期主义"
+    ]
+    # 对关键词添加高亮样式（橙色背景+加粗）
+    for word in key_words:
+        if word in speech:
+            speech = speech.replace(
+                word,
+                f"<span style='background: #FFF3CD; color: #D9822B; font-weight: 600; padding: 0.1rem 0.3rem; border-radius: 4px;'>{word}</span>"
+            )
+    return speech
+
+
 st.markdown("<div class='warm-card'>", unsafe_allow_html=True)
 if len(daily_summary) == 0:
     st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>该周期暂无参与数据～</p>",
@@ -924,18 +1028,13 @@ if len(daily_summary) == 0:
 else:
     for _, row in daily_summary.iterrows():
         # 2. 基础数据获取（日期、星期、主持人、参与成员）
-        # 关键修改：统一处理日期格式，仅保留年月日（兼容datetime/字符串）
         date_val = row["日期"]
         weekday_map = {0: "周一", 1: "周二", 2: "周三", 3: "周四", 4: "周五", 5: "周六", 6: "周日"}
         if pd.api.types.is_datetime64_any_dtype(date_val):
-            # 若为datetime类型（含时分秒），仅格式化年月日
             date_str = date_val.strftime("%Y-%m-%d")
-            # 基于datetime获取星期（不受时分秒影响）
             weekday = weekday_map[date_val.weekday()]
         else:
-            # 若为字符串，尝试截取/格式化年月日（兼容"2025-11-29 14:30:00"或"2025-11-29"）
-            date_str = str(date_val).split(" ")[0]  # 按空格分割，只取前面的年月日部分
-            # 字符串日期尝试转datetime获取星期，失败则设为未知
+            date_str = str(date_val).split(" ")[0]
             try:
                 weekday_dt = pd.to_datetime(date_str)
                 weekday = weekday_map[weekday_dt.weekday()]
@@ -943,49 +1042,64 @@ else:
                 weekday = "未知"
 
         host = row["主持人"] if row["主持人"] != "无" else "未指定"
-        participants = row["参与成员"]  # 确保这是成员姓名列表（如 ["李阳州", "光影"]）
+        participants = row["参与成员"]
 
-        # 3. 关键：定义 member_speeches（从 row 中获取成员发言，无数据则设为空字典）
-        # 优先从 row 中取“成员发言”，如果没有则设为空字典，避免变量未定义
+        # 3. 成员发言容错处理
         member_speeches = row.get("成员发言", {}) if isinstance(row, dict) else (
             row["成员发言"] if "成员发言" in daily_summary.columns else {})
-        # 额外容错：如果获取到的不是字典（比如字符串/None），强制转为空字典
         if not isinstance(member_speeches, dict):
             member_speeches = {}
 
-        # 4. 渲染日期+主持人标题（原有逻辑保留，日期仅显示年月日）
+        # 4. 渲染日期+主持人标题
         st.markdown(f"""
             <h4 style='color: #488286; margin-top: 1.5rem;'>
                 {date_str}（{weekday}）| 主持人：<span class='host-highlight'>{host}</span>
             </h4>
         """, unsafe_allow_html=True)
 
-        # 5. 渲染成员标签+发言内容（修复后）
+        # 5. 渲染成员标签+精简发言（核心优化）
         st.markdown(
             "<div class='daily-participants' style='display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 1rem 0;'>",
             unsafe_allow_html=True)
+
         for member in participants:
-            # 5.1 获取当前成员的发言（无则显示“未记录发言内容”）
-            speech = member_speeches.get(member, "未记录发言内容")
-            # 5.2 区分主持人和普通成员的标签样式
+            # 5.1 获取发言内容（容错）
+            full_speech = member_speeches.get(member, "未记录发言内容")
+            # 5.2 提取核心摘要+关键词高亮
+            core_summary = extract_core_summary(full_speech)
+            highlighted_summary = highlight_keywords(core_summary)
+            highlighted_full = highlight_keywords(full_speech)
+
+            # 5.3 区分主持人标签样式
             if member == host:
                 tag_html = f"<span class='participant-tag host-highlight'>{member}（主持人）</span>"
             else:
                 tag_html = f"<span class='participant-tag'>{member}</span>"
-            # 5.3 渲染“标签+发言”（垂直排列，样式优化）
+
+            # 5.4 渲染：标签+高亮摘要 + 折叠面板（完整发言）
             st.markdown(f"""
-                <div style='width: calc(33.33% - 1rem); min-width: 250px;'>
+                <div style='width: calc(33.33% - 1rem); min-width: 250px; margin-bottom: 1rem;'>
                     {tag_html}
-                    <p style='margin: 0.3rem 0 0 0; font-size: 0.9rem; color: #6b7280; line-height: 1.5; padding-left: 0.2rem;'>
-                        {speech}
+                    <!-- 核心摘要（默认展示，含高亮） -->
+                    <p style='margin: 0.3rem 0 0.5rem 0; font-size: 0.9rem; color: #374151; line-height: 1.6; padding-left: 0.2rem;'>
+                        {highlighted_summary}
                     </p>
+                    <!-- 折叠面板（完整发言） -->
+                    <details style='font-size: 0.85rem; color: #6b7280; line-height: 1.5;'>
+                        <summary style='cursor: pointer; color: #488286;'>查看完整发言</summary>
+                        <p style='margin: 0.5rem 0 0 0; padding-left: 0.5rem; border-left: 2px solid #E5E7EB;'>
+                            {highlighted_full}
+                        </p>
+                    </details>
                 </div>
             """, unsafe_allow_html=True)
+
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # 6. 补充CSS样式（确保标签和发言排版美观）
+        # 6. 优化CSS样式（调整字体/行高/高亮样式）
         st.markdown("""
             <style>
+                /* 成员标签样式 */
                 .participant-tag {
                     background: #f0f8fb; 
                     color: #1b5e20; 
@@ -995,9 +1109,25 @@ else:
                     font-weight: 600;
                     display: inline-block;
                 }
+                /* 主持人标签高亮 */
                 .host-highlight {
                     background: linear-gradient(90deg, #FFE8CC 0%, #FFD5B8 100%);
                     color: #D9534F;
+                }
+                /* 折叠面板样式优化 */
+                details > summary {
+                    list-style: none; /* 去掉默认箭头 */
+                }
+                details > summary::before {
+                    content: "📝 "; /* 自定义折叠图标 */
+                    font-size: 0.8rem;
+                }
+                details[open] > summary::before {
+                    content: "🔍 "; /* 展开后图标变化 */
+                }
+                /* 全局字体优化 */
+                .daily-participants p {
+                    letter-spacing: 0.02rem; /* 字间距提升可读性 */
                 }
             </style>
         """, unsafe_allow_html=True)
