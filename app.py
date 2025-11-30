@@ -535,10 +535,29 @@ def calculate_member_metrics():
     # 填充未被点赞的成员为0
     member_participation["被点赞数"] = member_participation["被点赞数"].fillna(0).astype(int)
 
-    # 【新增】3. 补充主持次数（从原始df中提取每个成员的总主持次数）
-    # 由于df中每个成员的"主持次数"字段已在process_daily_data中计算为总次数，直接取每个成员的最大值即可
-    host_counts = df.groupby("成员姓名")["主持次数"].max().reset_index()
-    member_participation = member_participation.merge(host_counts, on="成员姓名", how="left")
+    # 【修改】3. 按当前筛选周期计算主持次数
+    def get_period_host_count(member, start_date, end_date):
+        """计算指定成员在指定时间段内的主持次数"""
+        # 筛选该成员在指定时间段内的主持记录
+        host_records = df[
+            (df["成员姓名"] == member) &
+            (df["主持人"] == member) &  # 该成员是主持人
+            (df["日期"] >= start_date) &
+            (df["日期"] <= end_date)
+            ]
+        # 去重统计天数（每天只算一次）
+        return host_records["日期"].nunique()
+
+    # 计算当前筛选周期的主持次数
+    host_counts = []
+    for member in member_participation["成员姓名"].unique():
+        host_counts.append({
+            "成员姓名": member,
+            "主持次数": get_period_host_count(member, start_date, end_date)
+        })
+
+    host_counts_df = pd.DataFrame(host_counts)
+    member_participation = member_participation.merge(host_counts_df, on="成员姓名", how="left")
     # 填充未主持过的成员为0
     member_participation["主持次数"] = member_participation["主持次数"].fillna(0).astype(int)
 
@@ -599,21 +618,21 @@ st.markdown("<p style='text-align: center;'>基于本月新成员的参与次数
 
 # ---------------------- 新增：三种榜单计算函数 ----------------------
 def get_comprehensive_ranking(metrics_df):
-    """综合实力榜：参与次数×40% + 复盘质量分×50% + 被点赞数×10%"""
+    """综合实力榜"""
     df = metrics_df.copy()
     # 计算综合分（标准化得分，避免数值范围差异影响）
     max_participate = df["参与次数"].max() if df["参与次数"].max() > 0 else 1
     max_quality = df["复盘质量分"].max() if df["复盘质量分"].max() > 0 else 1
-    max_like = df["被点赞数"].max() if df["被点赞数"].max() > 0 else 1
+    max_host = df["主持次数"].max() if df["主持次数"].max() > 0 else 1  # 新增：主持次数最大值
 
     df["参与次数标准化"] = df["参与次数"] / max_participate * 10
     df["质量分标准化"] = df["复盘质量分"] / max_quality * 10
-    df["点赞数标准化"] = df["被点赞数"] / max_like * 10
+    df["主持次数标准化"] = df["主持次数"] / max_host * 10  # 新增：主持次数标准化
 
     df["综合实力分"] = (
-            df["参与次数标准化"] * 0.4 +
-            df["质量分标准化"] * 0.5 +
-            df["点赞数标准化"] * 0.1
+            df["参与次数标准化"] * 0.4 +  # 参与次数权重40%
+            df["质量分标准化"] * 0.3 +    # 复盘质量分权重40%
+            df["主持次数标准化"] * 0.3   # 主持次数权重20%（替代原点赞数的10%，总权重保持100%）
     ).round(2)
 
     return df.sort_values("综合实力分", ascending=False).reset_index(drop=True)
@@ -950,7 +969,7 @@ with tab1:
             <div class='rank-header'>
                 <span class='rank-icon'>🏆</span>
                 <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>综合实力榜</h3>
-                <span class='rank-desc'>面向活跃用户 | 参与次数×40% + 质量分×50% + 点赞数×10%</span>
+                <span class='rank-desc'>面向活跃用户 | 参与次数×40% + 质量分×30% + 主持次数×10%</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -960,8 +979,8 @@ with tab1:
                     unsafe_allow_html=True)
     else:
         # 展示前10名表格
-        display_cols = ["排名", "成员姓名", "参与次数", "复盘质量分", "被点赞数", "综合实力分"]
-        rank_df = comprehensive_rank[["成员姓名", "参与次数", "复盘质量分", "被点赞数", "综合实力分"]].copy()
+        display_cols = ["排名", "成员姓名", "参与次数", "复盘质量分", "主持次数", "综合实力分"]
+        rank_df = comprehensive_rank[["成员姓名", "参与次数", "复盘质量分", "主持次数", "综合实力分"]].copy()
         rank_df["排名"] = range(1, len(rank_df) + 1)
         rank_df = rank_df[display_cols]
 
@@ -973,7 +992,7 @@ with tab1:
                 "排名": st.column_config.NumberColumn("排名", format="%d"),
                 "参与次数": st.column_config.NumberColumn("参与次数", format="%d"),
                 "复盘质量分": st.column_config.NumberColumn("复盘质量分", format="%.1f"),
-                "被点赞数": st.column_config.NumberColumn("被点赞数", format="%d"),
+                "主持次数": st.column_config.NumberColumn("主持次数", format="%d"),
                 "综合实力分": st.column_config.NumberColumn("综合实力分", format="%.2f")
             }
         )
