@@ -68,7 +68,7 @@ st.markdown("""
 warnings.filterwarnings("ignore")
 # ---------------------- 核心配置（用户后续需填写的内容）----------------------
 # 1. 本月新成员名单（用户稍后填写，格式：["成员1", "成员2", ...]）
-THIS_MONTH_NEW_MEMBERS = ["李韫","Libby","陈庚","阿龙","二月","七公主","匆匆","拈指花开","姜姜好","自由之花","阿成","浅夏"]
+THIS_MONTH_NEW_MEMBERS = ["李韫","Libby","陈庚","阿龙","二月","七公主","匆匆","拈指花开","姜姜好","自由之花","阿成","浅夏","明峻"]
 
 # 2. 复盘质量分（用户稍后填写，格式：{成员姓名: 最新质量分, ...}，10分制）
 #REVIEW_QUALITY_SCORES = {}  # 示例：{"光影": 8.5, "小妮": 9.2, "小马哥": 7.8}
@@ -609,7 +609,7 @@ metrics_df = calculate_member_metrics()
 st.subheader("🏆 本期黑马（新成员前6名）")
 dark_horse = get_this_month_dark_horse(metrics_df)
 st.markdown(dark_horse, unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>基于本月新成员的参与次数、复盘质量分综合评选</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>基于入群新成员的参与次数、主持次数综合评选</p>", unsafe_allow_html=True)
 
 # ---------------------- 在主界面添加新功能入口 ----------------------
 # 在现有代码的主界面部分（如侧边栏下方或主内容区）添加
@@ -630,9 +630,9 @@ def get_comprehensive_ranking(metrics_df):
     df["主持次数标准化"] = df["主持次数"] / max_host * 10  # 新增：主持次数标准化
 
     df["综合实力分"] = (
-            df["参与次数标准化"] * 0.4 +  # 参与次数权重40%
-            df["质量分标准化"] * 0.3 +    # 复盘质量分权重40%
-            df["主持次数标准化"] * 0.3   # 主持次数权重20%（替代原点赞数的10%，总权重保持100%）
+            df["参与次数标准化"] * 0.4 +
+            df["质量分标准化"] * 0.3 +
+            df["主持次数标准化"] * 0.4
     ).round(2)
 
     return df.sort_values("综合实力分", ascending=False).reset_index(drop=True)
@@ -969,7 +969,7 @@ with tab1:
             <div class='rank-header'>
                 <span class='rank-icon'>🏆</span>
                 <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>综合实力榜</h3>
-                <span class='rank-desc'>面向活跃用户 | 参与次数×40% + 质量分×30% + 主持次数×10%</span>
+                <span class='rank-desc'>面向活跃用户 | 参与次数×40% + 质量分×30% + 主持次数×40%</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -1079,8 +1079,8 @@ def highlight_keywords(speech: str) -> str:
     """自动高亮发言中的核心关键词（可根据业务扩展关键词列表）"""
     # 自定义需高亮的关键词（覆盖复盘/工作/学习/休息等场景）
     key_words = [
-        "番茄钟", "复盘", "休息", "冥想", "高效", "目标", "节奏","反思","学习"
-        "内耗", "理想", "韬光养晦", "锋芒毕露", "知行合一", "长期主义"
+        "番茄钟", "复盘", "休息", "冥想", "高效", "目标", "节奏","反思","学习","坚持"
+        "内耗", "理想", "韬光养晦", "锋芒毕露", "知行合一", "长期主义","阅读","计划"
     ]
     # 对关键词添加高亮样式（橙色背景+加粗）
     for word in key_words:
