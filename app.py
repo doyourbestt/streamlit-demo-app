@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from datetime import datetime, timedelta, date
 from pathlib import Path
+import requests  # 加载在线JSON
+import json  # 加载本地JSON
+
 import warnings
 
 # 强化IP质感：字体组合+全局样式统一
@@ -630,8 +633,7 @@ def get_comprehensive_ranking(metrics_df):
     df["主持次数标准化"] = df["主持次数"] / max_host * 10  # 新增：主持次数标准化
 
     df["综合实力分"] = (
-            df["参与次数标准化"] * 0.4 +
-            df["质量分标准化"] * 0.3 +
+            df["参与次数标准化"] * 0.6 +
             df["主持次数标准化"] * 0.4
     ).round(2)
 
@@ -744,6 +746,54 @@ def get_weekly_progress_ranking(metrics_df):
 
     # 按进步分降序，取Top10
     return progress_df.sort_values("每周进步分", ascending=False).head(10).reset_index(drop=True)
+
+def get_inactive_ranking(metrics_df):
+    """危险低活跃榜：按最近一次参与时间距今天数排序，时间越久排名越靠前"""
+    df = metrics_df.copy()
+
+    # 检查必要字段
+    required_cols = ["成员姓名", "日期", "是否参与"]
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"缺少必要字段：{', '.join(missing_cols)}")
+
+    # 转换日期格式
+    try:
+        df["日期"] = pd.to_datetime(df["日期"]).dt.date
+    except Exception as e:
+        raise ValueError(f"日期格式错误：{str(e)}")
+
+    # 获取当前日期
+    today = datetime.now().date()
+
+    # 筛选有参与记录的用户
+    active_users = df[df["是否参与"] == 1]["成员姓名"].unique()
+
+    # 计算每个用户最近一次参与时间
+    latest_participation = []
+    for user in active_users:
+        # 获取该用户所有参与记录
+        user_records = df[(df["成员姓名"] == user) & (df["是否参与"] == 1)]
+        if len(user_records) > 0:
+            # 最近一次参与日期
+            latest_date = user_records["日期"].max()
+            # 计算距今天数
+            days_since = (today - latest_date).days
+            latest_participation.append({
+                "成员姓名": user,
+                "最近参与日期": latest_date,
+                "距今天数": days_since
+            })
+
+    # 创建DataFrame并排序
+    inactive_df = pd.DataFrame(latest_participation)
+    if len(inactive_df) > 0:
+        # 按距今天数降序排序（时间越久排名越靠前）
+        inactive_df = inactive_df.sort_values("距今天数", ascending=False).reset_index(drop=True)
+        # 添加排名
+        inactive_df["排名"] = range(1, len(inactive_df) + 1)
+
+    return inactive_df
 
 # ---------------------- 页面样式定制（原有样式不变，新增榜单样式）----------------------
 def set_warm_style():
@@ -904,9 +954,7 @@ def set_warm_style():
         </style>
     """, unsafe_allow_html=True)
 
-
 set_warm_style()
-
 
 # ---------------------- 数据预处理（按筛选周期过滤） ----------------------
 # 按筛选周期过滤数据
@@ -961,7 +1009,7 @@ newbie_rank = get_newbie_ranking(metrics_df)
 weekly_progress_rank = get_weekly_progress_ranking(metrics_df)
 
 # 榜单切换Tabs
-tab1, tab2, tab3 = st.tabs(["综合实力榜", "新锐成长榜", "每周进步榜"])
+tab1, tab2, tab3, tab4 = st.tabs(["综合实力榜", "新锐成长榜", "每周进步榜", "危险低活跃榜"])
 
 with tab1:
     st.markdown("""
@@ -969,7 +1017,7 @@ with tab1:
             <div class='rank-header'>
                 <span class='rank-icon'>🏆</span>
                 <h3 style='color: #488286; margin: 0; font-size: 1.2rem;'>综合实力榜</h3>
-                <span class='rank-desc'>面向活跃用户 | 参与次数×40% + 质量分×30% + 主持次数×40%</span>
+                <span class='rank-desc'>面向活跃用户 | 参与次数×60% + 主持次数×40%</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -979,8 +1027,8 @@ with tab1:
                     unsafe_allow_html=True)
     else:
         # 展示前10名表格
-        display_cols = ["排名", "成员姓名", "参与次数", "复盘质量分", "主持次数", "综合实力分"]
-        rank_df = comprehensive_rank[["成员姓名", "参与次数", "复盘质量分", "主持次数", "综合实力分"]].copy()
+        display_cols = ["排名", "成员姓名", "参与次数", "主持次数", "综合实力分"]
+        rank_df = comprehensive_rank[["成员姓名", "参与次数", "主持次数", "综合实力分"]].copy()
         rank_df["排名"] = range(1, len(rank_df) + 1)
         rank_df = rank_df[display_cols]
 
@@ -991,7 +1039,6 @@ with tab1:
             column_config={
                 "排名": st.column_config.NumberColumn("排名", format="%d"),
                 "参与次数": st.column_config.NumberColumn("参与次数", format="%d"),
-                "复盘质量分": st.column_config.NumberColumn("复盘质量分", format="%.1f"),
                 "主持次数": st.column_config.NumberColumn("主持次数", format="%d"),
                 "综合实力分": st.column_config.NumberColumn("综合实力分", format="%.2f")
             }
@@ -1057,6 +1104,38 @@ with tab3:
                 "上周参与次数": st.column_config.NumberColumn("上周参与次数", format="%d"),
                 "本周参与次数": st.column_config.NumberColumn("本周参与次数", format="%d"),
                 "每周进步分": st.column_config.NumberColumn("每周进步分", format="%d")
+            }
+        )
+
+with tab4:
+    st.markdown("""
+        <div class='rank-card'>
+            <div class='rank-header'>
+                <span class='rank-icon'>⚠️</span>
+                <h3 style='color: #e53e3e; margin: 0; font-size: 1.2rem;'>危险低活跃榜</h3>
+                <span class='rank-desc'>按最近一次参与时间距今天数排序 | 时间越久排名越靠前</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    inactive_rank = get_inactive_ranking(metrics_df)
+
+    if len(inactive_rank) == 0:
+        st.markdown("<p style='color: #6B9093; text-align: center; padding: 2rem 0;'>暂无排名数据～</p>",
+                    unsafe_allow_html=True)
+    else:
+        # 展示前五名表格
+        display_cols = ["排名", "成员姓名", "最近参与日期", "距今天数"]
+        rank_df = inactive_rank[display_cols].copy()
+
+        st.dataframe(
+            rank_df.head(5),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "排名": st.column_config.NumberColumn("排名", format="%d"),
+                "最近参与日期": st.column_config.DateColumn("最近参与日期"),
+                "距今天数": st.column_config.NumberColumn("距今天数", format="%d天")
             }
         )
 
